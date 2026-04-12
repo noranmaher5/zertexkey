@@ -1,21 +1,112 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { toast } from "react-toastify";
 import { orderAPI } from '../services/api';
+import toast from 'react-hot-toast';
 
-const STATUS_STYLES = {
-  pending:    'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  paid:       'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  processing: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  completed:  'bg-green-500/10 text-green-400 border-green-500/20',
-  failed:     'bg-red-500/10 text-red-400 border-red-500/20',
-  refunded:   'bg-gray-500/10 text-gray-400 border-gray-500/20',
-  cancelled:  'bg-red-500/10 text-red-400 border-red-500/20',
+const STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+  .ord-root {
+    min-height: 100vh;
+    background: #10140c;
+    padding-top: 80px;
+    padding-bottom: 64px;
+    font-family: 'Outfit', sans-serif;
+    color: #e8f0e0;
+  }
+  .ord-glass {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #2a3420;
+    border-radius: 16px;
+  }
+  .ord-card {
+    background: #141810;
+    border: 1px solid #2a3420;
+    border-radius: 16px;
+    transition: border-color .2s, background .2s;
+    text-decoration: none;
+    display: block;
+  }
+  .ord-card:hover {
+    border-color: #567245;
+    background: #161c11;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border: 1px solid;
+  }
+  .code-box {
+    background: #0e1209;
+    border: 1px solid #2a3420;
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transition: border-color .2s;
+  }
+  .code-box:hover { border-color: #567245; }
+  .copy-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(86,114,69,0.12);
+    border: 1px solid rgba(86,114,69,0.25);
+    color: #889679;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; flex-shrink: 0;
+  }
+  .copy-btn:hover {
+    background: rgba(86,114,69,0.25);
+    border-color: #567245;
+    color: #c4d6a1;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin .7s linear infinite; }
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(10px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .fade-up { animation: fadeUp .35s ease both; }
+`;
+
+const STATUS_CONFIG = {
+  pending:    { color:'#fbbf24', bg:'rgba(251,191,36,0.08)',   border:'rgba(251,191,36,0.2)',  dot:'#fbbf24', label:'Pending'    },
+  paid:       { color:'#60a5fa', bg:'rgba(96,165,250,0.08)',   border:'rgba(96,165,250,0.2)',  dot:'#60a5fa', label:'Paid'       },
+  processing: { color:'#60a5fa', bg:'rgba(96,165,250,0.08)',   border:'rgba(96,165,250,0.2)',  dot:'#60a5fa', label:'Processing' },
+  completed:  { color:'#22c55e', bg:'rgba(34,197,94,0.08)',    border:'rgba(34,197,94,0.2)',   dot:'#22c55e', label:'Completed'  },
+  failed:     { color:'#f87171', bg:'rgba(248,113,113,0.08)',  border:'rgba(248,113,113,0.2)', dot:'#f87171', label:'Failed'     },
+  refunded:   { color:'#889679', bg:'rgba(136,150,121,0.08)',  border:'rgba(136,150,121,0.2)',dot:'#889679', label:'Refunded'   },
+  cancelled:  { color:'#f87171', bg:'rgba(248,113,113,0.08)',  border:'rgba(248,113,113,0.2)', dot:'#f87171', label:'Cancelled'  },
 };
 
+const StatusBadge = ({ status }) => {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+  return (
+    <span className="status-badge" style={{
+      color: cfg.color, background: cfg.bg, borderColor: cfg.border
+    }}>
+      <span style={{ width:5, height:5, borderRadius:'50%', background:cfg.dot, display:'inline-block' }} />
+      {cfg.label}
+    </span>
+  );
+};
+
+// ── Orders List Page ──────────────────────────────────────────────────────────
 export function OrdersPage() {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders]   = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter]   = useState('all');
 
   useEffect(() => {
     orderAPI.getMyOrders()
@@ -24,47 +115,190 @@ export function OrdersPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return (
-    <div className="pt-20 min-h-screen flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  const filtered = filter === 'all'
+    ? orders
+    : orders.filter(o => o.status === filter);
 
   return (
-    <div className="page-enter pt-20 pb-16 min-h-screen">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <h1 className="font-display font-bold text-3xl text-white mb-8">My Orders</h1>
+    <div className="ord-root">
+      <style>{STYLES}</style>
+      <div style={{ maxWidth:860, margin:'0 auto', padding:'32px 20px' }}>
 
-        {orders.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">📦</div>
-            <h3 className="font-display font-semibold text-white text-xl mb-2">No orders yet</h3>
-            <p className="text-gray-400 mb-6">Your order history will appear here</p>
-            <Link to="/products" className="btn-primary">Start Shopping</Link>
+        {/* Header */}
+        <div className="fade-up" style={{ marginBottom:28 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+            <div style={{ width:3, height:20, borderRadius:2, background:'#567245' }} />
+            <span style={{ fontFamily:'Rajdhani,sans-serif', fontSize:12, fontWeight:700,
+              color:'#4a5a3a', letterSpacing:'.12em', textTransform:'uppercase' }}>
+              Purchase History
+            </span>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {orders.map(order => (
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+            <h1 style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:800,
+              fontSize:30, color:'#e8f0e0', margin:0 }}>
+              My Orders
+              {orders.length > 0 && (
+                <span style={{ fontSize:16, fontWeight:500, color:'#4a5a3a', marginLeft:10 }}>
+                  ({orders.length})
+                </span>
+              )}
+            </h1>
+            <Link to="/products" style={{
+              display:'inline-flex', alignItems:'center', gap:6,
+              fontSize:13, color:'#889679', textDecoration:'none',
+              padding:'8px 16px', borderRadius:8,
+              border:'1px solid #2a3420', background:'#141810',
+              fontFamily:'Outfit,sans-serif', transition:'all .2s',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor='#567245'; e.currentTarget.style.color='#c4d6a1'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor='#2a3420'; e.currentTarget.style.color='#889679'; }}>
+              + New Purchase
+            </Link>
+          </div>
+        </div>
+
+        {/* Filter Tabs */}
+        {orders.length > 0 && (
+          <div className="fade-up" style={{
+            display:'flex', gap:6, marginBottom:20,
+            overflowX:'auto', paddingBottom:4,
+          }}>
+            {['all', 'completed', 'pending', 'failed'].map(f => (
+              <button key={f} onClick={() => setFilter(f)} style={{
+                padding:'6px 14px', borderRadius:8, border:'1px solid',
+                fontSize:12, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap',
+                fontFamily:'Rajdhani,sans-serif', letterSpacing:'.06em',
+                textTransform:'uppercase', transition:'all .2s',
+                borderColor: filter === f ? '#567245' : '#2a3420',
+                background:  filter === f ? 'rgba(86,114,69,0.12)' : '#141810',
+                color:        filter === f ? '#c4d6a1' : '#4a5a3a',
+              }}>
+                {f === 'all' ? `All (${orders.length})` : f}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading && (
+          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} style={{
+                height:80, borderRadius:16, background:'#141810',
+                border:'1px solid #2a3420',
+                animation:'fadeUp .3s ease both',
+                animationDelay: `${i * 0.06}s`,
+              }} />
+            ))}
+          </div>
+        )}
+
+        {/* Empty */}
+        {!loading && orders.length === 0 && (
+          <div className="fade-up" style={{
+            textAlign:'center', padding:'72px 0',
+            display:'flex', flexDirection:'column', alignItems:'center', gap:16,
+          }}>
+            <div style={{
+              width:64, height:64, borderRadius:18, background:'#141810',
+              border:'1px solid #2a3420', display:'flex', alignItems:'center',
+              justifyContent:'center', fontSize:28,
+            }}>📦</div>
+            <div>
+              <h3 style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:700,
+                fontSize:22, color:'#e8f0e0', margin:'0 0 6px' }}>No orders yet</h3>
+              <p style={{ fontSize:13, color:'#4a5a3a', margin:0 }}>
+                Your purchase history will appear here
+              </p>
+            </div>
+            <Link to="/products" style={{
+              display:'inline-flex', alignItems:'center', gap:6,
+              background:'#567245', color:'white', textDecoration:'none',
+              padding:'11px 24px', borderRadius:10, fontSize:14,
+              fontWeight:600, fontFamily:'Outfit,sans-serif',
+              transition:'background .2s',
+            }}
+              onMouseEnter={e => e.currentTarget.style.background='#658553'}
+              onMouseLeave={e => e.currentTarget.style.background='#567245'}>
+              Start Shopping →
+            </Link>
+          </div>
+        )}
+
+        {/* No results after filter */}
+        {!loading && orders.length > 0 && filtered.length === 0 && (
+          <div style={{ textAlign:'center', padding:'40px 0' }}>
+            <p style={{ color:'#4a5a3a', fontSize:14 }}>No {filter} orders found</p>
+          </div>
+        )}
+
+        {/* Orders List */}
+        {!loading && filtered.length > 0 && (
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {filtered.map((order, i) => (
               <Link
                 key={order._id}
                 to={`/orders/${order._id}`}
-                className="glass rounded-2xl p-5 flex items-center gap-4 hover:border-primary-500/30 transition-all duration-200 block group"
+                className="ord-card fade-up"
+                style={{ padding:'18px 20px', animationDelay:`${i * 0.04}s` }}
               >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="font-mono text-primary-400 text-sm font-semibold">{order.orderNumber}</span>
-                    <span className={`badge border text-xs ${STATUS_STYLES[order.status] || STATUS_STYLES.pending}`}>
-                      {order.status}
+                <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+
+                  {/* Icon */}
+                  <div style={{
+                    width:42, height:42, borderRadius:12, flexShrink:0,
+                    background: order.status === 'completed'
+                      ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.03)',
+                    border:`1px solid ${order.status === 'completed' ? 'rgba(34,197,94,0.2)' : '#2a3420'}`,
+                    display:'flex', alignItems:'center', justifyContent:'center', fontSize:18,
+                  }}>
+                    {order.status === 'completed' ? '✅' :
+                     order.status === 'failed'    ? '❌' :
+                     order.status === 'pending'   ? '⏳' : '📦'}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:5, flexWrap:'wrap' }}>
+                      <span style={{
+                        fontFamily:'Rajdhani,sans-serif', fontWeight:700,
+                        fontSize:15, color:'#c4d6a1', letterSpacing:'.04em',
+                      }}>
+                        {order.orderNumber}
+                      </span>
+                      <StatusBadge status={order.status} />
+                    </div>
+                    <p style={{
+                      fontSize:12, color:'#4a5a3a', margin:'0 0 3px',
+                      overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                    }}>
+                      {order.items?.map(i => i.name || i.product?.name).filter(Boolean).join(', ') || 'Digital Products'}
+                    </p>
+                    <p style={{ fontSize:11, color:'#3a4a2a', margin:0 }}>
+                      {new Date(order.createdAt).toLocaleDateString('en-US', {
+                        year:'numeric', month:'short', day:'numeric',
+                        hour:'2-digit', minute:'2-digit'
+                      })}
+                    </p>
+                  </div>
+
+                  {/* Amount + Arrow */}
+                  <div style={{ textAlign:'right', flexShrink:0 }}>
+                    <p style={{
+                      fontFamily:'Rajdhani,sans-serif', fontWeight:800,
+                      fontSize:20, color:'#e8f0e0', margin:'0 0 4px',
+                    }}>
+                      ${order.totalAmount?.toFixed(2)}
+                    </p>
+                    <span style={{ fontSize:11, color:'#3a4a2a', display:'flex',
+                      alignItems:'center', gap:3, justifyContent:'flex-end' }}>
+                      View details
+                      <svg width="12" height="12" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
                     </span>
                   </div>
-                  <p className="text-gray-400 text-sm">
-                    {order.items?.map(i => i.name || i.product?.name).filter(Boolean).join(', ')}
-                  </p>
-                  <p className="text-gray-600 text-xs mt-1">{new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="font-display font-bold text-white text-lg">${order.totalAmount?.toFixed(2)}</p>
-                  <p className="text-xs text-gray-500 mt-1 group-hover:text-primary-400 transition-colors">View details →</p>
                 </div>
               </Link>
             ))}
@@ -75,11 +309,13 @@ export function OrdersPage() {
   );
 }
 
+// ── Order Detail Page ─────────────────────────────────────────────────────────
 export function OrderDetailPage() {
   const { id } = useParams();
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [order, setOrder]       = useState(null);
+  const [loading, setLoading]   = useState(true);
   const [showCodes, setShowCodes] = useState({});
+  const [copied, setCopied]     = useState({});
 
   useEffect(() => {
     orderAPI.getOne(id)
@@ -88,99 +324,255 @@ export function OrderDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const handleCopy = (code, key) => {
+    navigator.clipboard.writeText(code);
+    setCopied(c => ({ ...c, [key]: true }));
+    toast.success('Code copied!');
+    setTimeout(() => setCopied(c => ({ ...c, [key]: false })), 2000);
+  };
+
+  const handleCopyAll = (item, idx) => {
+    const allCodes = item.codes.map(c => c.code || c).join('\n');
+    navigator.clipboard.writeText(allCodes);
+    toast.success(`${item.codes.length} codes copied!`);
+  };
+
   if (loading) return (
-    <div className="pt-20 min-h-screen flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+    <div style={{ minHeight:'100vh', background:'#10140c', display:'flex',
+      alignItems:'center', justifyContent:'center' }}>
+      <style>{STYLES}</style>
+      <div style={{ width:36, height:36, border:'3px solid #567245',
+        borderTopColor:'transparent', borderRadius:'50' }} className="spin" />
     </div>
   );
 
   if (!order) return (
-    <div className="pt-20 min-h-screen flex flex-col items-center justify-center text-center px-4">
-      <div className="text-6xl mb-4">😕</div>
-      <h2 className="font-display font-bold text-2xl text-white mb-2">Order Not Found</h2>
-      <Link to="/orders" className="btn-primary mt-4">Back to Orders</Link>
+    <div style={{ minHeight:'100vh', background:'#10140c', display:'flex',
+      flexDirection:'column', alignItems:'center', justifyContent:'center',
+      textAlign:'center', padding:24 }}>
+      <style>{STYLES}</style>
+      <div style={{ fontSize:56, marginBottom:16 }}>😕</div>
+      <h2 style={{ fontFamily:'Rajdhani,sans-serif', fontSize:26,
+        color:'#e8f0e0', margin:'0 0 8px' }}>Order Not Found</h2>
+      <Link to="/orders" style={{
+        marginTop:16, background:'#567245', color:'white',
+        textDecoration:'none', padding:'11px 24px', borderRadius:10,
+        fontSize:14, fontWeight:600, fontFamily:'Outfit,sans-serif',
+      }}>Back to Orders</Link>
     </div>
   );
 
+  const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+
   return (
-    <div className="page-enter pt-20 pb-16 min-h-screen">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <Link to="/orders" className="text-sm text-gray-500 hover:text-white transition-colors flex items-center gap-1 mb-4">
-            ← Back to orders
-          </Link>
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="ord-root">
+      <style>{STYLES}</style>
+      <div style={{ maxWidth:760, margin:'0 auto', padding:'32px 20px' }}>
+
+        {/* Back */}
+        <Link to="/orders" className="fade-up" style={{
+          display:'inline-flex', alignItems:'center', gap:6,
+          fontSize:13, color:'#4a5a3a', textDecoration:'none',
+          marginBottom:20, fontFamily:'Outfit,sans-serif',
+          transition:'color .2s',
+        }}
+          onMouseEnter={e => e.currentTarget.style.color='#889679'}
+          onMouseLeave={e => e.currentTarget.style.color='#4a5a3a'}>
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          Back to orders
+        </Link>
+
+        {/* Header Card */}
+        <div className="ord-glass fade-up" style={{ padding:'24px 28px', marginBottom:20 }}>
+          <div style={{ display:'flex', alignItems:'flex-start',
+            justifyContent:'space-between', gap:16, flexWrap:'wrap' }}>
             <div>
-              <h1 className="font-display font-bold text-2xl sm:text-3xl text-white">Order Details</h1>
-              <p className="font-mono text-primary-400 mt-1">{order.orderNumber}</p>
+              <p style={{ fontSize:11, fontWeight:600, color:'#4a5a3a',
+                fontFamily:'Rajdhani,sans-serif', letterSpacing:'.1em',
+                textTransform:'uppercase', margin:'0 0 6px' }}>Order Details</p>
+              <h1 style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:800,
+                fontSize:26, color:'#e8f0e0', margin:'0 0 8px' }}>
+                {order.orderNumber}
+              </h1>
+              <p style={{ fontSize:12, color:'#4a5a3a', margin:0 }}>
+                Placed on {new Date(order.createdAt).toLocaleDateString('en-US', {
+                  year:'numeric', month:'long', day:'numeric',
+                  hour:'2-digit', minute:'2-digit'
+                })}
+              </p>
             </div>
-            <span className={`badge border px-4 py-2 text-sm rounded-xl ${STATUS_STYLES[order.status] || STATUS_STYLES.pending}`}>
-              {order.status}
-            </span>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8 }}>
+              <StatusBadge status={order.status} />
+              <p style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:800,
+                fontSize:28, color:'#e8f0e0', margin:0 }}>
+                ${order.totalAmount?.toFixed(2)}
+              </p>
+              <p style={{ fontSize:11, color:'#4a5a3a', margin:0, textTransform:'capitalize' }}>
+                via {order.paymentMethod}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Status Banner */}
+        {/* Completed Banner */}
         {order.status === 'completed' && (
-          <div className="glass rounded-2xl p-4 border border-green-500/30 bg-green-500/5 mb-6 flex items-center gap-3">
-            <span className="text-2xl">✅</span>
+          <div className="fade-up" style={{
+            background:'rgba(34,197,94,0.05)', border:'1px solid rgba(34,197,94,0.2)',
+            borderRadius:14, padding:'14px 20px', marginBottom:20,
+            display:'flex', alignItems:'center', gap:12,
+          }}>
+            <div style={{
+              width:36, height:36, borderRadius:10,
+              background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.2)',
+              display:'flex', alignItems:'center', justifyContent:'center', fontSize:18,
+              flexShrink:0,
+            }}>✅</div>
             <div>
-              <p className="text-green-400 font-semibold">Order Fulfilled!</p>
-              <p className="text-gray-400 text-sm">Your codes have been sent to your email{order.emailSent ? ' and are shown below' : ''}.</p>
+              <p style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:700,
+                fontSize:15, color:'#22c55e', margin:'0 0 2px' }}>
+                Order Fulfilled Successfully!
+              </p>
+              <p style={{ fontSize:12, color:'#4a6a4a', margin:0 }}>
+                Your digital codes are ready below
+                {order.emailSent && ' and have been sent to your email'}
+              </p>
             </div>
           </div>
         )}
 
-        {/* Items & Codes */}
-        <div className="space-y-4 mb-6">
+        {/* Items */}
+        <div style={{ display:'flex', flexDirection:'column', gap:14, marginBottom:20 }}>
           {order.items?.map((item, idx) => (
-            <div key={idx} className="glass rounded-2xl p-5">
-              <div className="flex items-center gap-4 mb-4">
+            <div key={idx} className="ord-glass fade-up"
+              style={{ padding:'20px 24px', animationDelay:`${idx * 0.06}s` }}>
+
+              {/* Item Header */}
+              <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom: item.codes?.length ? 16 : 0 }}>
                 <img
-                  src={item.image || `https://placehold.co/60x60/1a1a35/6366f1?text=${(item.name || '?')[0]}`}
+                  src={item.image || `https://placehold.co/52x52/141810/567245?text=${(item.name||'?')[0]}`}
                   alt={item.name}
-                  className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
-                  onError={e => { e.target.src = `https://placehold.co/60x60/1a1a35/6366f1?text=${(item.name || '?')[0]}`; }}
+                  style={{ width:52, height:52, borderRadius:12, objectFit:'cover',
+                    flexShrink:0, border:'1px solid #2a3420' }}
+                  onError={e => { e.target.src=`https://placehold.co/52x52/141810/567245?text=${(item.name||'?')[0]}`; }}
                 />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-white">{item.name || item.product?.name}</h3>
-                  <p className="text-gray-400 text-sm">Qty: {item.quantity} × ${item.price?.toFixed(2)}</p>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <h3 style={{ fontFamily:'Outfit,sans-serif', fontWeight:600,
+                    fontSize:15, color:'#e8f0e0', margin:'0 0 4px',
+                    overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {item.name || item.product?.name}
+                  </h3>
+                  <p style={{ fontSize:12, color:'#4a5a3a', margin:0 }}>
+                    Qty: {item.quantity} × ${item.price?.toFixed(2)}
+                  </p>
                 </div>
-                <span className="font-bold text-white">${(item.price * item.quantity).toFixed(2)}</span>
+                <span style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:700,
+                  fontSize:18, color:'#c4d6a1', flexShrink:0 }}>
+                  ${(item.price * item.quantity).toFixed(2)}
+                </span>
               </div>
 
-              {/* Digital Codes */}
+              {/* Codes Section */}
               {item.codes?.length > 0 && (
                 <div>
-                  <button
-                    onClick={() => setShowCodes(s => ({ ...s, [idx]: !s[idx] }))}
-                    className="flex items-center gap-2 text-sm text-primary-400 hover:text-primary-300 transition-colors mb-3"
-                  >
-                    <svg className={`w-4 h-4 transition-transform ${showCodes[idx] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    {showCodes[idx] ? 'Hide' : 'Show'} {item.codes.length} code{item.codes.length > 1 ? 's' : ''}
-                  </button>
+                  <div style={{ height:1, background:'#2a3420', margin:'0 0 14px' }} />
 
+                  {/* Toggle Header */}
+                  <div style={{ display:'flex', alignItems:'center',
+                    justifyContent:'space-between', marginBottom:10 }}>
+                    <button
+                      onClick={() => setShowCodes(s => ({ ...s, [idx]: !s[idx] }))}
+                      style={{
+                        display:'flex', alignItems:'center', gap:7,
+                        background:'none', border:'none', cursor:'pointer',
+                        fontFamily:'Outfit,sans-serif', fontSize:13,
+                        fontWeight:600, color:'#889679',
+                        transition:'color .2s', padding:0,
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.color='#c4d6a1'}
+                      onMouseLeave={e => e.currentTarget.style.color='#889679'}
+                    >
+                      <svg
+                        width="14" height="14" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" strokeWidth={2}
+                        style={{ transition:'transform .2s',
+                          transform: showCodes[idx] ? 'rotate(90deg)' : 'rotate(0)' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                      {showCodes[idx] ? 'Hide' : 'Show'} {item.codes.length} code{item.codes.length > 1 ? 's' : ''}
+                    </button>
+
+                    {/* Copy All */}
+                    {showCodes[idx] && item.codes.length > 1 && (
+                      <button
+                        onClick={() => handleCopyAll(item, idx)}
+                        style={{
+                          display:'flex', alignItems:'center', gap:5,
+                          background:'rgba(86,114,69,0.1)', border:'1px solid rgba(86,114,69,0.2)',
+                          borderRadius:7, padding:'4px 10px',
+                          fontSize:11, fontWeight:600, color:'#889679',
+                          cursor:'pointer', fontFamily:'Outfit,sans-serif',
+                          transition:'all .2s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background='rgba(86,114,69,0.2)'; e.currentTarget.style.color='#c4d6a1'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background='rgba(86,114,69,0.1)'; e.currentTarget.style.color='#889679'; }}
+                      >
+                        <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copy All
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Codes List */}
                   {showCodes[idx] && (
-                    <div className="space-y-2">
-                      {item.codes.map((code, ci) => (
-                        <div key={ci} className="code-display rounded-xl p-4 flex items-center justify-between gap-3">
-                          <span className="font-mono text-primary-300 text-sm sm:text-base tracking-widest break-all">
-                            {code.code || code}
-                          </span>
-                          <button
-                            onClick={() => { navigator.clipboard.writeText(code.code || code); toast.success('Code copied!'); }}
-                            className="flex-shrink-0 p-2 rounded-lg bg-primary-500/20 hover:bg-primary-500/40 text-primary-400 transition-colors"
-                            title="Copy code"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
+                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      {item.codes.map((code, ci) => {
+                        const codeVal = code.code || code;
+                        const copyKey = `${idx}-${ci}`;
+                        return (
+                          <div key={ci} className="code-box">
+                            <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                              <span style={{
+                                fontSize:11, fontWeight:700,
+                                fontFamily:'Rajdhani,sans-serif',
+                                color:'#4a5a3a', letterSpacing:'.06em',
+                                flexShrink:0,
+                              }}>
+                                #{ci + 1}
+                              </span>
+                              <span style={{
+                                fontFamily:'monospace', fontSize:14,
+                                color:'#c4d6a1', letterSpacing:'.12em',
+                                overflow:'hidden', textOverflow:'ellipsis',
+                                whiteSpace:'nowrap',
+                              }}>
+                                {codeVal}
+                              </span>
+                            </div>
+                            <button
+                              className="copy-btn"
+                              onClick={() => handleCopy(codeVal, copyKey)}
+                              title="Copy code"
+                            >
+                              {copied[copyKey] ? (
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24"
+                                  stroke="#22c55e" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24"
+                                  stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -190,20 +582,49 @@ export function OrderDetailPage() {
         </div>
 
         {/* Summary */}
-        <div className="glass rounded-2xl p-5">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-gray-400">Subtotal</span>
-            <span className="text-white">${order.totalAmount?.toFixed(2)}</span>
+        <div className="ord-glass fade-up" style={{ padding:'20px 24px' }}>
+          <h3 style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:700,
+            fontSize:16, color:'#e8f0e0', margin:'0 0 14px' }}>
+            Order Summary
+          </h3>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            <div style={{ display:'flex', justifyContent:'space-between' }}>
+              <span style={{ fontSize:13, color:'#4a5a3a' }}>Subtotal</span>
+              <span style={{ fontSize:13, color:'#e8f0e0' }}>${order.totalAmount?.toFixed(2)}</span>
+            </div>
+            <div style={{ display:'flex', justifyContent:'space-between' }}>
+              <span style={{ fontSize:13, color:'#4a5a3a' }}>Tax</span>
+              <span style={{ fontSize:13, color:'#22c55e' }}>$0.00</span>
+            </div>
+            <div style={{ height:1, background:'#2a3420', margin:'4px 0' }} />
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:700,
+                fontSize:16, color:'#e8f0e0' }}>Total</span>
+              <span style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:800,
+                fontSize:24, color:'#e8f0e0' }}>${order.totalAmount?.toFixed(2)}</span>
+            </div>
           </div>
-          <div className="flex justify-between items-center border-t border-white/10 pt-3 mt-2">
-            <span className="font-semibold text-white">Total</span>
-            <span className="font-display font-bold text-xl text-white">${order.totalAmount?.toFixed(2)}</span>
-          </div>
-          <div className="mt-3 pt-3 border-t border-white/5 text-xs text-gray-500 space-y-1">
-            <p>Payment: {order.paymentMethod}</p>
-            <p>Placed: {new Date(order.createdAt).toLocaleString()}</p>
+
+          <div style={{ height:1, background:'#2a3420', margin:'14px 0' }} />
+
+          <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+            {[
+              ['Payment Method', order.paymentMethod],
+              ['Order ID', order._id],
+              ['Date', new Date(order.createdAt).toLocaleString()],
+            ].map(([label, val]) => (
+              <div key={label} style={{ display:'flex', justifyContent:'space-between', gap:12 }}>
+                <span style={{ fontSize:11, color:'#3a4a2a' }}>{label}</span>
+                <span style={{ fontSize:11, color:'#4a5a3a', textAlign:'right',
+                  overflow:'hidden', textOverflow:'ellipsis',
+                  fontFamily: label === 'Order ID' ? 'monospace' : 'inherit' }}>
+                  {val}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
+
       </div>
     </div>
   );

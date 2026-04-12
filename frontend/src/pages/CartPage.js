@@ -298,7 +298,7 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     if (!isAuthenticated) return navigate('/login?redirect=/checkout');
-    navigate('/');
+    navigate('/checkout');
   };
 
   const handleRemoveItem = (item) => {
@@ -458,11 +458,7 @@ export default function CartPage() {
               ← Continue Shopping
             </Link>
 
-            <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'center', gap: 22, flexWrap: 'wrap' }}>
-              {['🔒 Secure', '⚡ Fast', '✅ Original'].map(label => (
-                <span key={label} style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{label}</span>
-              ))}
-            </div>
+          
           </div>
         </div>
       </div>

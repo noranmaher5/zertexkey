@@ -11,8 +11,19 @@ dotenv.config();
 const app = express();
 
 // ─── CORS Middleware (Must be first!) ──────────────────────────────────────────
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3000'
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
@@ -39,7 +50,7 @@ app.use('/api/users',    require('./routes/userRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders',   require('./routes/orderRoutes'));
 app.use('/api/codes',    require('./routes/codeRoutes'));
-app.use('/api/cart', require('./routes/cartRoutes'));
+app.use('/api/cart',     require('./routes/cartRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/admin',    require('./routes/adminRoutes'));
 
