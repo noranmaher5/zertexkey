@@ -16,9 +16,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [backendOnline, setBackendOnline] = useState(true);
 
-  // ─────────────────────────────────────────────
-  // Backend health check
-  // ─────────────────────────────────────────────
   useEffect(() => {
     let alive = true;
 
@@ -38,9 +35,6 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // ─────────────────────────────────────────────
-  // Restore session
-  // ─────────────────────────────────────────────
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem('dv_token');
@@ -51,7 +45,6 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // 1) set cached user immediately (UI faster)
       if (cachedUser) {
         try {
           setUser(JSON.parse(cachedUser));
@@ -59,12 +52,15 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        // 2) verify token with backend
-        const res = await authAPI.getMe();
+        const res = await Promise.race([
+          authAPI.getMe(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 5000)
+          )
+        ]);
         setUser(res.data.user);
         localStorage.setItem('dv_user', JSON.stringify(res.data.user));
       } catch (err) {
-        // only clear if token is truly invalid
         if (err.response?.status === 401) {
           localStorage.removeItem('dv_token');
           localStorage.removeItem('dv_user');
@@ -78,9 +74,6 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  // ─────────────────────────────────────────────
-  // LOGIN
-  // ─────────────────────────────────────────────
   const login = useCallback(async (email, password) => {
     const res = await authAPI.login({ email, password });
     const { token, user } = res.data;
@@ -90,9 +83,6 @@ export const AuthProvider = ({ children }) => {
     return user;
   }, []);
 
-  // ─────────────────────────────────────────────
-  // REGISTER
-  // ─────────────────────────────────────────────
   const register = useCallback(async (name, email, password, phone) => {
     const res = await authAPI.register({ name, email, password, phone });
     const { token, user } = res.data;
@@ -102,22 +92,14 @@ export const AuthProvider = ({ children }) => {
     return user;
   }, []);
 
-  // ─────────────────────────────────────────────
-  // GOOGLE LOGIN — UPDATED
-  // بيرجع الـ response كاملاً عشان LoginPage يقرر:
-  //   - لو requiresOTP: true  → يعرض شاشة OTP
-  //   - لو فيه token + user   → login مباشر (fallback)
-  // ─────────────────────────────────────────────
   const googleLogin = useCallback(async (credential) => {
     const res = await authAPI.googleAuth({ token: credential });
     const data = res.data;
 
-    // Case 1: Server requires OTP → return the data as-is for LoginPage to handle
     if (data.requiresOTP) {
-      return data; // { requiresOTP: true, otpToken, email }
+      return data;
     }
 
-    // Case 2: Direct login (no OTP required)
     const { token, user } = data;
     localStorage.setItem('dv_token', token);
     localStorage.setItem('dv_user', JSON.stringify(user));
@@ -125,19 +107,12 @@ export const AuthProvider = ({ children }) => {
     return user;
   }, []);
 
-  // ─────────────────────────────────────────────
-  // SET AUTH TOKEN — NEW
-  // يُستدعى من LoginPage بعد التحقق من الـ OTP بنجاح
-  // ─────────────────────────────────────────────
   const setAuthToken = useCallback((token, userData) => {
     localStorage.setItem('dv_token', token);
     localStorage.setItem('dv_user', JSON.stringify(userData));
     setUser(userData);
   }, []);
 
-  // ─────────────────────────────────────────────
-  // LOGOUT
-  // ─────────────────────────────────────────────
   const logout = useCallback(() => {
     localStorage.removeItem('dv_token');
     localStorage.removeItem('dv_user');
@@ -145,9 +120,6 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out');
   }, []);
 
-  // ─────────────────────────────────────────────
-  // UPDATE USER
-  // ─────────────────────────────────────────────
   const updateUser = useCallback((updates) => {
     setUser((prev) => {
       const updated = { ...prev, ...updates };
@@ -156,9 +128,6 @@ export const AuthProvider = ({ children }) => {
     });
   }, []);
 
-  // ─────────────────────────────────────────────
-  // ROLE SYSTEM
-  // ─────────────────────────────────────────────
   const roleLevel = {
     user: 0,
     editor: 1,
@@ -176,9 +145,6 @@ export const AuthProvider = ({ children }) => {
     [user]
   );
 
-  // ─────────────────────────────────────────────
-  // GLOBAL LOGOUT LISTENER
-  // ─────────────────────────────────────────────
   useEffect(() => {
     const handler = () => {
       setUser(null);
@@ -190,24 +156,19 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener('auth:logout', handler);
   }, []);
 
-  // ─────────────────────────────────────────────
-  // CONTEXT VALUE
-  // ─────────────────────────────────────────────
   return (
     <AuthContext.Provider
       value={{
         user,
         loading,
         backendOnline,
-
         login,
         register,
         googleLogin,
         logout,
         updateUser,
         hasRole,
-        setAuthToken,      // ← جديد
-
+        setAuthToken,
         isAuthenticated: !!user
       }}
     >
@@ -216,9 +177,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// ─────────────────────────────────────────────
-// HOOK
-// ─────────────────────────────────────────────
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) {
