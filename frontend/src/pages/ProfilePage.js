@@ -1,0 +1,1078 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { authAPI } from '../services/api';
+import toast from 'react-hot-toast';
+import userDefaultAvatar from '../assets/user.png';
+
+const FontLoader = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --bg-base:       #0a0d07;
+      --bg-card:       #0f1209;
+      --bg-sidebar:    #0c0f08;
+      --bg-surface:    #141810;
+      --bg-row:        #111408;
+      --border-soft:   #1e2517;
+      --border-dim:    #161a10;
+      --accent-orange: #f97316;
+      --accent-green:  #567245;
+      --accent-lime:   #c4d6a1;
+      --text-primary:  #e8f0e0;
+      --text-secondary:#6b7c5a;
+      --text-dim:      #3a4a2a;
+      --text-muted:    #2a3420;
+    }
+
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+    @keyframes spin     { to{transform:rotate(360deg)} }
+    @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:.5} }
+    @keyframes shimmer  { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+    @keyframes glow     { 0%,100%{box-shadow:0 0 10px var(--accent-orange)30} 50%{box-shadow:0 0 20px var(--accent-orange)60} }
+
+    .fu  { animation: fadeUp .42s cubic-bezier(.22,.68,0,1.2) both }
+    .fu1 { animation: fadeUp .42s .05s cubic-bezier(.22,.68,0,1.2) both }
+    .fu2 { animation: fadeUp .42s .10s cubic-bezier(.22,.68,0,1.2) both }
+    .fu3 { animation: fadeUp .42s .15s cubic-bezier(.22,.68,0,1.2) both }
+    .fu4 { animation: fadeUp .42s .20s cubic-bezier(.22,.68,0,1.2) both }
+    .spin-icon { animation: spin .75s linear infinite }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px }
+    ::-webkit-scrollbar-track { background: transparent }
+    ::-webkit-scrollbar-thumb { background: var(--border-soft); border-radius: 4px }
+
+    /* ── Inputs ── */
+    .profile-input {
+      width: 100%;
+      background: var(--bg-row);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-size: 13.5px;
+      font-family: 'Space Grotesk', sans-serif;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+      box-sizing: border-box;
+      letter-spacing: .01em;
+    }
+    .profile-input::placeholder { color: var(--text-dim) }
+    .profile-input:focus {
+      border-color: var(--accent-orange);
+      box-shadow: 0 0 0 3px rgba(249,115,22,.1);
+      background: #13170f;
+    }
+    .profile-input:disabled { opacity: .3; cursor: not-allowed }
+
+    /* ── Save Button ── */
+    .btn-save {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #567245, #4a6139);
+      color: #fff;
+      border: 1px solid rgba(86,114,69,.4);
+      border-radius: 10px;
+      padding: 11px 24px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      letter-spacing: .02em;
+    }
+    .btn-save:hover:not(:disabled) {
+      background: linear-gradient(135deg, #648553, #567245);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(86,114,69,.25);
+    }
+    .btn-save:active:not(:disabled) { transform: translateY(0) }
+    .btn-save:disabled { opacity: .4; cursor: not-allowed }
+
+    /* ── Nav Buttons ── */
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+      transition: all .18s;
+      position: relative;
+      letter-spacing: .01em;
+    }
+    .nav-btn.active {
+      background: rgba(249,115,22,.08);
+      color: var(--accent-lime);
+      border: 1px solid rgba(249,115,22,.12);
+    }
+    .nav-btn.inactive { color: var(--text-secondary) }
+    .nav-btn.inactive:hover {
+      color: var(--text-primary);
+      background: rgba(255,255,255,.03);
+    }
+    .nav-btn.disabled { color: var(--text-dim); cursor: not-allowed; opacity: .5 }
+    .nav-btn.active .nav-indicator {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-orange);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    /* ── Mobile Tab Bar ── */
+    .mobile-nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      flex: 1;
+      padding: 9px 4px;
+      border: none;
+      background: transparent;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: color .18s;
+      position: relative;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .mobile-nav-btn.active { color: var(--text-primary) }
+    .mobile-nav-btn.disabled { color: var(--text-dim); cursor: not-allowed; opacity: .5 }
+    .mobile-nav-btn.active::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 32px;
+      height: 2px;
+      border-radius: 0 0 3px 3px;
+      background: var(--accent-orange);
+    }
+
+    /* ── Order Cards ── */
+    .order-card {
+      border-radius: 14px;
+      border: 1px solid var(--border-soft);
+      background: var(--bg-row);
+      padding: 0;
+      overflow: hidden;
+      transition: border-color .2s, transform .15s, box-shadow .2s;
+      cursor: default;
+    }
+    .order-card:hover {
+      border-color: rgba(249,115,22,.2);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(0,0,0,.3);
+    }
+    .order-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      gap: 12px;
+    }
+    .order-card-bottom {
+      border-top: 1px solid var(--border-dim);
+      padding: 11px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0,0,0,.15);
+    }
+    .order-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent-lime);
+      letter-spacing: .04em;
+    }
+    .order-amount {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -.01em;
+    }
+    .order-amount-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .order-date {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* ── Avatar Upload ── */
+    .avatar-upload-btn {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-orange);
+      border: 2px solid var(--bg-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+      z-index: 10;
+    }
+    .avatar-upload-btn:hover {
+      background: #ea6c0a;
+      transform: scale(1.1);
+    }
+
+    /* ── Section Header ── */
+    .section-eyebrow {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -.01em;
+      margin: 0;
+    }
+
+    /* ── Field Label ── */
+    .field-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+
+    /* ── Divider ── */
+    .divider-accent {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-soft), transparent);
+      margin: 24px 0;
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 64px 24px;
+      text-align: center;
+      gap: 12px;
+    }
+    .empty-icon-box {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+
+    /* ── Stats Row ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--bg-row);
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-top: 2px;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* ── Orders Grid ── */
+    .orders-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* ── Layout ── */
+    .profile-layout { display: flex; min-height: 560px }
+    .profile-sidebar { width: 236px; flex-shrink: 0; display: flex; flex-direction: column }
+    .profile-content { flex: 1; padding: 36px 40px; min-width: 0 }
+    .mobile-tab-bar { display: none }
+
+    /* ── Password Strength ── */
+    .strength-bar {
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border-soft);
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .strength-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width .3s, background .3s;
+    }
+
+    @media (max-width: 820px) {
+      .orders-grid { grid-template-columns: 1fr }
+      .profile-content { padding: 28px 24px }
+    }
+
+    @media (max-width: 768px) {
+      .profile-layout { flex-direction: column; min-height: unset }
+      .profile-sidebar { width: 100%; border-right: none !important; border-bottom: 1px solid var(--border-soft) }
+      .sidebar-nav-desktop { display: none !important }
+      .mobile-tab-bar { display: flex; background: var(--bg-sidebar); border-top: 1px solid var(--border-soft); padding: 4px 8px }
+      .profile-content { padding: 24px 20px }
+      .sidebar-bottom-accent { display: none }
+      .sidebar-user-info { flex-direction: row !important; align-items: center !important; gap: 14px; padding: 16px 20px !important }
+      .sidebar-user-text { margin-top: 0 !important }
+      .stats-row { grid-template-columns: repeat(3, 1fr) }
+    }
+
+    @media (max-width: 540px) {
+      .profile-wrapper { padding: 16px 12px 0 !important }
+      .profile-card { border-radius: 16px !important }
+      .profile-content { padding: 20px 16px !important }
+      .sidebar-user-info { padding: 14px 16px !important }
+      .avatar-preview-box { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important }
+      .btn-save { width: 100%; justify-content: center }
+      .stats-row { grid-template-columns: 1fr 1fr }
+      .stat-card:last-child { grid-column: 1 / -1 }
+      .order-card-top { flex-wrap: wrap }
+    }
+
+    @media (max-width: 360px) {
+      .mobile-nav-btn span { display: none }
+      .mobile-nav-btn { padding: 12px 4px }
+    }
+  `}</style>
+);
+
+// ── Role Config ──────────────────────────────────────────────────────────────
+const ROLE_LEVEL = { user:0, editor:1, admin:2, manager:3, 'co-owner':4, owner:5 };
+
+const ROLE_CONFIG = {
+  user:       { color:'#889679', bg:'rgba(136,150,121,0.1)',  border:'rgba(136,150,121,0.2)',  label:'User',     icon:'👤' },
+  editor:     { color:'#60a5fa', bg:'rgba(96,165,250,0.1)',   border:'rgba(96,165,250,0.2)',   label:'Editor',   icon:'✏️' },
+  admin:      { color:'#c084fc', bg:'rgba(192,132,252,0.1)',  border:'rgba(192,132,252,0.2)',  label:'Admin',    icon:'⚙️' },
+  manager:    { color:'#fbbf24', bg:'rgba(251,191,36,0.1)',   border:'rgba(251,191,36,0.2)',   label:'Manager',  icon:'🛡️' },
+  'co-owner': { color:'#f472b6', bg:'rgba(244,114,182,0.1)',  border:'rgba(244,114,182,0.2)',  label:'Co-Owner', icon:'👑' },
+  owner:      { color:'#f97316', bg:'rgba(249,115,22,0.12)',  border:'rgba(249,115,22,0.25)',  label:'Owner',    icon:'⚡' },
+};
+
+// ── Status Config ─────────────────────────────────────────────────────────────
+const STATUS_CONFIG = {
+  completed: { color:'#4ade80', bg:'rgba(74,222,128,0.1)',  border:'rgba(74,222,128,0.2)',  dot:'#4ade80', label:'Completed' },
+  paid:      { color:'#4ade80', bg:'rgba(74,222,128,0.1)',  border:'rgba(74,222,128,0.2)',  dot:'#4ade80', label:'Paid'      },
+  pending:   { color:'#fbbf24', bg:'rgba(251,191,36,0.1)',  border:'rgba(251,191,36,0.2)',  dot:'#fbbf24', label:'Pending'   },
+  failed:    { color:'#f87171', bg:'rgba(248,113,113,0.1)', border:'rgba(248,113,113,0.2)', dot:'#f87171', label:'Failed'    },
+  cancelled: { color:'#94a3b8', bg:'rgba(148,163,184,0.1)', border:'rgba(148,163,184,0.2)', dot:'#94a3b8', label:'Cancelled' },
+};
+
+// ── useWindowSize ────────────────────────────────────────────────────────────
+const useWindowSize = () => {
+  const [size, setSize] = useState({ width: typeof window !== 'undefined' ? window.innerWidth : 1200 });
+  useEffect(() => {
+    const handler = () => setSize({ width: window.innerWidth });
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return size;
+};
+
+// ── Avatar Component ─────────────────────────────────────────────────────────
+const Avatar = ({ user, size = 64, canEdit = false, onUpload }) => {
+  const cfg = ROLE_CONFIG[user?.role] || ROLE_CONFIG.user;
+  const isHighRole = (ROLE_LEVEL[user?.role] || 0) >= 2;
+
+  return (
+    <div style={{ position:'relative', width:size, height:size, flexShrink:0 }}>
+      {isHighRole && (
+        <div style={{
+          position:'absolute', inset:-3, borderRadius:'50%',
+          border:`2px solid ${cfg.color}`,
+          boxShadow:`0 0 18px ${cfg.color}35`,
+          zIndex:1, pointerEvents:'none',
+        }} />
+      )}
+      <div style={{
+        width:size, height:size, borderRadius:'50%', overflow:'hidden', position:'relative',
+        border:`2px solid ${isHighRole ? cfg.color + '50' : '#2a3420'}`,
+      }}>
+        <img src={user?.avatar || userDefaultAvatar} alt="avatar"
+          style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        {isHighRole && !user?.avatar && (
+          <div style={{
+            position:'absolute', inset:0,
+            background:`linear-gradient(135deg, ${cfg.color}20, transparent)`,
+            display:'flex', alignItems:'flex-end', justifyContent:'flex-end', padding:4,
+          }}>
+            <span style={{ fontSize:size * 0.22, lineHeight:1 }}>{cfg.icon}</span>
+          </div>
+        )}
+      </div>
+      {canEdit && (
+        <label className="avatar-upload-btn" title="Change avatar">
+          <input type="file" accept="image/*" style={{display:'none'}} onChange={onUpload} />
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </label>
+      )}
+    </div>
+  );
+};
+
+// ── Role Badge ───────────────────────────────────────────────────────────────
+const RoleBadge = ({ role }) => {
+  const cfg = ROLE_CONFIG[role] || ROLE_CONFIG.user;
+  const isHighRole = (ROLE_LEVEL[role] || 0) >= 2;
+  return (
+    <span style={{
+      display:'inline-flex', alignItems:'center', gap:5,
+      fontSize:10, fontWeight:700, padding:'3px 10px',
+      borderRadius:6, fontFamily:'Space Grotesk,sans-serif',
+      letterSpacing:'.1em', textTransform:'uppercase',
+      color:cfg.color, background:cfg.bg, border:`1px solid ${cfg.border}`,
+      boxShadow:isHighRole ? `0 0 10px ${cfg.color}20` : 'none',
+    }}>
+      {isHighRole && <span style={{fontSize:10}}>{cfg.icon}</span>}
+      {cfg.label}
+    </span>
+  );
+};
+
+// ── Status Badge (upgraded) ───────────────────────────────────────────────────
+const StatusBadge = ({ status }) => {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+  return (
+    <span style={{
+      display:'inline-flex', alignItems:'center', gap:6,
+      fontSize:11, fontWeight:700, padding:'4px 11px',
+      borderRadius:20, fontFamily:'Space Grotesk,sans-serif',
+      letterSpacing:'.06em', textTransform:'uppercase',
+      color:cfg.color, background:cfg.bg, border:`1px solid ${cfg.border}`,
+    }}>
+      <span style={{ width:5, height:5, borderRadius:'50%', background:cfg.dot, flexShrink:0, display:'inline-block' }} />
+      {cfg.label}
+    </span>
+  );
+};
+
+const NAV_ITEMS = [
+  { id:'account',  label:'My Account', mobileLabel:'Account'  },
+  { id:'orders',   label:'Orders',     mobileLabel:'Orders'   },
+  { id:'security', label:'Security',   mobileLabel:'Security' },
+  { id:'rewards',  label:'Rewards',    mobileLabel:'Rewards', soon:true },
+];
+
+const NAV_ICONS = {
+  account:  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zm-4 7a7 7 0 00-7 7h14a7 7 0 00-7-7z" />,
+  orders:   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />,
+  security: <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />,
+  rewards:  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
+};
+
+const SectionTitle = ({ title, sub }) => (
+  <div style={{ marginBottom:30 }}>
+    <h2 className="section-eyebrow">{title}</h2>
+    <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:8 }}>
+      <div style={{ width:24, height:2, borderRadius:2, background:'#f97316', flexShrink:0 }} />
+      <span style={{ fontSize:11.5, color:'#3a4a2a', fontFamily:'Space Grotesk,sans-serif', letterSpacing:'.03em' }}>{sub}</span>
+    </div>
+  </div>
+);
+
+const Label = ({ children }) => (
+  <label className="field-label">{children}</label>
+);
+
+// ── Account Tab ──────────────────────────────────────────────────────────────
+const AccountTab = ({ user, updateUser, onAvatarChange }) => {
+  const [name, setName]     = useState(user?.name || '');
+  const [phone, setPhone]   = useState(user?.phone || '');
+  const [avatar, setAvatar] = useState(user?.avatar || '');
+  const [saving, setSaving] = useState(false);
+  const canEditAvatar = (ROLE_LEVEL[user?.role] || 0) >= 1;
+
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error('Image must be less than 2MB');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setAvatar(ev.target.result);
+      onAvatarChange?.(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = { name, phone };
+      if (canEditAvatar) payload.avatar = avatar;
+      const res = await authAPI.updateProfile(payload);
+      updateUser({ name:res.data.user.name, phone:res.data.user.phone, avatar:res.data.user.avatar });
+      onAvatarChange?.(res.data.user.avatar);
+      toast.success('Profile updated!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Update failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fu">
+      <SectionTitle title="My Account" sub="Manage your personal details" />
+
+      {/* Avatar Box */}
+      <div className="avatar-preview-box" style={{
+        display:'flex', alignItems:'center', gap:20, marginBottom:32,
+        padding:'20px 24px', background:'#0c0f08', borderRadius:16,
+        border:'1px solid #1e2517', position:'relative', overflow:'hidden'
+      }}>
+        {/* decorative corner */}
+        <div style={{
+          position:'absolute', top:0, right:0, width:100, height:100,
+          background:'radial-gradient(circle at top right, rgba(249,115,22,0.06), transparent 70%)',
+          pointerEvents:'none'
+        }} />
+        <Avatar user={{...user, avatar}} size={76} canEdit={canEditAvatar} onUpload={handleAvatarUpload} />
+        <div style={{minWidth:0}}>
+          <p style={{
+            fontFamily:'Syne,sans-serif', fontSize:18, fontWeight:700, color:'#e8f0e0',
+            margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'
+          }}>{user?.name}</p>
+          <p style={{ fontSize:12, color:'#3a4a2a', marginTop:3, fontFamily:'Space Grotesk,sans-serif' }}>{user?.email}</p>
+          <div style={{marginTop:8, display:'flex', alignItems:'center', gap:8}}>
+            <RoleBadge role={user?.role} />
+            {!canEditAvatar ? (
+              <span style={{fontSize:10.5, color:'#3a4a2a'}}>Avatar locked for regular users</span>
+            ) : (
+              <span style={{fontSize:10.5, color:'#567245'}}>📷 Click camera icon to update</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={handleSave} style={{display:'flex', flexDirection:'column', gap:20}}>
+        <div>
+          <Label>Full Name</Label>
+          <input type="text" required className="profile-input" value={name}
+            onChange={e => setName(e.target.value)} placeholder="Your full name" />
+        </div>
+        <div>
+          <Label>Phone Number</Label>
+          <input type="tel" className="profile-input" value={phone}
+            onChange={e => setPhone(e.target.value)} placeholder="+20 1xx xxx xxxx" />
+        </div>
+        <div>
+          <Label>Email Address</Label>
+          <input type="email" disabled className="profile-input" value={user?.email} />
+          <p style={{fontSize:11, color:'#3a4a2a', marginTop:6, fontFamily:'Space Grotesk,sans-serif'}}>
+            ⚠ Email address cannot be changed
+          </p>
+        </div>
+        <div style={{paddingTop:4}}>
+          <button type="submit" disabled={saving} className="btn-save">
+            {saving ? (
+              <>
+                <svg className="spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="4" style={{opacity:.25}}/>
+                  <path fill="white" d="M4 12a8 8 0 018-8v8H4z" style={{opacity:.8}}/>
+                </svg>
+                Saving…
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Save Changes
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+// ── Orders Tab (upgraded) ────────────────────────────────────────────────────
+const OrdersTab = ({ user }) => {
+  const orders = user?.orders || [];
+
+  if (!orders.length) return (
+    <div className="fu">
+      <SectionTitle title="Orders" sub="Your purchase history" />
+      <div className="empty-state">
+        <div className="empty-icon-box">
+          <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="#3a4a2a" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </div>
+        <p style={{fontSize:14, color:'#4a5a3a', margin:0, fontFamily:'Space Grotesk,sans-serif', fontWeight:600}}>No orders yet</p>
+        <p style={{fontSize:12, color:'#3a4a2a', margin:0, fontFamily:'Space Grotesk,sans-serif'}}>Your purchase history will appear here</p>
+      </div>
+    </div>
+  );
+
+  // Stats
+  const totalSpent  = orders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  const completed   = orders.filter(o => o.status === 'completed' || o.status === 'paid').length;
+  const pending     = orders.filter(o => o.status === 'pending').length;
+
+  return (
+    <div className="fu">
+      <SectionTitle title="Orders" sub={`${orders.length} order${orders.length !== 1 ? 's' : ''} total`} />
+
+      {/* Stats Row */}
+      <div className="stats-row">
+        {[
+          { label:'Total Orders',   value:orders.length,       suffix:'' },
+          { label:'Completed',      value:completed,           suffix:'' },
+          { label:'Total Spent',    value:`$${totalSpent.toFixed(0)}`, suffix:'' },
+        ].map((s, i) => (
+          <div className={`stat-card fu${i+1}`} key={i}>
+            <div className="stat-value">{s.value}</div>
+            <div className="stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Orders Grid */}
+      <div className="orders-grid">
+        {orders.map((order, i) => (
+          <div key={order._id} className={`order-card fu${Math.min(i+1,4)}`}>
+            <div className="order-card-top">
+              <div>
+                <div className="order-number">#{order.orderNumber}</div>
+                <div className="order-date" style={{marginTop:5}}>
+                  {new Date(order.createdAt).toLocaleDateString('en-US', {
+                    year:'numeric', month:'short', day:'numeric'
+                  })}
+                </div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div className="order-amount-label">Total</div>
+                <div className="order-amount">${order.totalAmount}</div>
+              </div>
+            </div>
+            <div className="order-card-bottom">
+              <StatusBadge status={order.status} />
+              <div style={{
+                fontSize:11, color:'#3a4a2a', fontFamily:'Space Grotesk,sans-serif',
+                display:'flex', alignItems:'center', gap:4,
+              }}>
+                <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {new Date(order.createdAt).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'})}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ── Security Tab ─────────────────────────────────────────────────────────────
+const SecurityTab = ({ logout }) => {
+  const [form, setForm]     = useState({ currentPassword:'', newPassword:'', confirm:'' });
+  const [saving, setSaving] = useState(false);
+
+  const getStrength = (pw) => {
+    if (!pw) return 0;
+    let score = 0;
+    if (pw.length >= 8)  score++;
+    if (pw.length >= 12) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    return score;
+  };
+  const strength = getStrength(form.newPassword);
+  const strengthColor = ['#3a4a2a','#f87171','#fbbf24','#fbbf24','#4ade80','#4ade80'][strength];
+  const strengthLabel = ['','Weak','Fair','Fair','Strong','Very Strong'][strength];
+
+  const handleChange = async (e) => {
+    e.preventDefault();
+    if (form.newPassword !== form.confirm) return toast.error('Passwords do not match');
+    if (form.newPassword.length < 8) return toast.error('Min 8 characters');
+    setSaving(true);
+    try {
+      await authAPI.updatePassword({ currentPassword:form.currentPassword, newPassword:form.newPassword });
+      toast.success('Password changed!');
+      setForm({ currentPassword:'', newPassword:'', confirm:'' });
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fu">
+      <SectionTitle title="Security" sub="Password & session management" />
+
+      <form onSubmit={handleChange} style={{display:'flex', flexDirection:'column', gap:20}}>
+        {[
+          { field:'currentPassword', label:'Current Password', ph:'Enter current password' },
+          { field:'newPassword',     label:'New Password',     ph:'Min. 8 characters', showStrength:true },
+          { field:'confirm',         label:'Confirm Password', ph:'Repeat new password' },
+        ].map(({field, label, ph, showStrength}) => (
+          <div key={field}>
+            <Label>{label}</Label>
+            <input type="password" required className="profile-input"
+              value={form[field]}
+              onChange={e => setForm(f => ({...f, [field]:e.target.value}))}
+              placeholder={ph} />
+            {showStrength && form.newPassword && (
+              <div style={{marginTop:8}}>
+                <div className="strength-bar">
+                  <div className="strength-fill" style={{
+                    width:`${(strength / 5) * 100}%`,
+                    background:strengthColor,
+                  }} />
+                </div>
+                <p style={{fontSize:10.5, color:strengthColor, marginTop:4, fontFamily:'Space Grotesk,sans-serif', fontWeight:600}}>
+                  {strengthLabel}
+                </p>
+              </div>
+            )}
+          </div>
+        ))}
+        <div>
+          <button type="submit" disabled={saving} className="btn-save">
+            {saving ? 'Updating…' : (
+              <>
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Change Password
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+
+      <div style={{marginTop:36, paddingTop:28, borderTop:'1px solid #1e2517'}}>
+        <p style={{fontSize:11, fontWeight:700, color:'#889679', marginBottom:14,
+          fontFamily:'Space Grotesk,sans-serif', textTransform:'uppercase', letterSpacing:'.1em'}}>
+          Danger Zone
+        </p>
+        <button onClick={logout} style={{
+          fontSize:13, padding:'10px 20px', borderRadius:10,
+          background:'rgba(239,68,68,0.07)', border:'1px solid rgba(239,68,68,0.15)',
+          color:'#f87171', cursor:'pointer', fontFamily:'Space Grotesk,sans-serif',
+          fontWeight:600, transition:'all .18s', width:'100%', maxWidth:260,
+          display:'flex', alignItems:'center', gap:8, letterSpacing:'.02em',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.background='rgba(239,68,68,0.13)'; e.currentTarget.style.borderColor='rgba(239,68,68,0.3)' }}
+          onMouseLeave={e => { e.currentTarget.style.background='rgba(239,68,68,0.07)'; e.currentTarget.style.borderColor='rgba(239,68,68,0.15)' }}>
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Sign Out of All Sessions
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── Rewards Tab ───────────────────────────────────────────────────────────────
+const RewardsTab = () => (
+  <div className="fu">
+    <SectionTitle title="Reward Points" sub="Earn with every purchase" />
+    <div className="empty-state">
+      <div style={{
+        width:70, height:70, borderRadius:20,
+        background:'rgba(249,115,22,0.07)',
+        border:'1px solid rgba(249,115,22,0.15)',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        marginBottom:8,
+      }}>
+        <svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="rgba(249,115,22,0.5)" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <span style={{
+        fontSize:10, fontWeight:700, letterSpacing:'.12em', textTransform:'uppercase',
+        color:'#f97316', background:'rgba(249,115,22,0.08)',
+        border:'1px solid rgba(249,115,22,0.16)', padding:'3px 12px',
+        borderRadius:6, display:'inline-block',
+        fontFamily:'Space Grotesk,sans-serif',
+      }}>Coming Soon</span>
+      <p style={{fontSize:13, color:'#4a5a3a', margin:0, fontFamily:'Space Grotesk,sans-serif'}}>Earn points with every purchase</p>
+      <p style={{fontSize:11.5, color:'#3a4a2a', margin:0, fontFamily:'Space Grotesk,sans-serif'}}>Redeem for discounts & exclusive perks</p>
+    </div>
+  </div>
+);
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+export default function ProfilePage() {
+  const { user, updateUser, logout } = useAuth();
+  const [activeTab, setActiveTab]         = useState('account');
+  const [mounted, setMounted]             = useState(false);
+  const [previewAvatar, setPreviewAvatar] = useState(user?.avatar || '');
+  const { width } = useWindowSize();
+  const isMobile = width <= 768;
+
+  const cfg        = ROLE_CONFIG[user?.role] || ROLE_CONFIG.user;
+  const isHighRole = (ROLE_LEVEL[user?.role] || 0) >= 2;
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 30);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    setPreviewAvatar(user?.avatar || '');
+  }, [user?.avatar]);
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'account':  return <AccountTab user={user} updateUser={updateUser} onAvatarChange={setPreviewAvatar} />;
+      case 'orders':   return <OrdersTab user={user} />;
+      case 'security': return <SecurityTab logout={logout} />;
+      case 'rewards':  return <RewardsTab />;
+      default:         return null;
+    }
+  };
+
+  return (
+    <>
+      <FontLoader />
+      <div style={{
+        minHeight:'100vh',
+        paddingTop:isMobile ? 60 : 80,
+        paddingBottom:isMobile ? 0 : 72,
+        background:'#0a0d07',
+        fontFamily:'Space Grotesk,sans-serif',
+      }}>
+        {/* Subtle top glow */}
+        <div style={{
+          position:'fixed', top:0, left:'50%', transform:'translateX(-50%)',
+          width:600, height:300,
+          background:'radial-gradient(ellipse at top, rgba(249,115,22,0.04), transparent 70%)',
+          pointerEvents:'none', zIndex:0,
+        }} />
+
+        <div
+          className="profile-wrapper"
+          style={{ maxWidth:880, margin:'0 auto', padding:isMobile ? '16px 12px 0' : '32px 16px', position:'relative', zIndex:1 }}
+        >
+          {/* Breadcrumb */}
+          <div className="fu" style={{ marginBottom:18, display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ width:3, height:18, borderRadius:2, background:'#f97316' }} />
+            <span style={{
+              fontFamily:'Space Grotesk,sans-serif', fontSize:11.5, fontWeight:700,
+              color:'#4a5a3a', letterSpacing:'.12em', textTransform:'uppercase'
+            }}>Profile Settings</span>
+          </div>
+
+          {/* Card */}
+          <div
+            className="profile-card"
+            style={{
+              background:'#0f1209',
+              border:`1px solid ${isHighRole ? cfg.color + '28' : '#1e2517'}`,
+              borderRadius:20,
+              overflow:'hidden',
+              boxShadow:isHighRole
+                ? `0 24px 80px rgba(0,0,0,.6), 0 0 40px ${cfg.color}0d`
+                : '0 24px 80px rgba(0,0,0,.6)',
+              opacity:   mounted ? 1 : 0,
+              transform: mounted ? 'translateY(0)' : 'translateY(12px)',
+              transition:'opacity .45s ease, transform .45s ease',
+              borderBottomLeftRadius:  isMobile ? 0 : 20,
+              borderBottomRightRadius: isMobile ? 0 : 20,
+            }}
+          >
+            <div className="profile-layout">
+
+              {/* ── Sidebar ── */}
+              <div
+                className="profile-sidebar"
+                style={{
+                  background:'#0c0f08',
+                  borderRight:isMobile ? 'none' : `1px solid ${isHighRole ? cfg.color + '18' : '#1e2517'}`,
+                  borderBottom:isMobile ? `1px solid ${isHighRole ? cfg.color + '15' : '#1e2517'}` : 'none',
+                }}
+              >
+                {/* User Info */}
+                <div
+                  className="sidebar-user-info"
+                  style={{
+                    padding:'26px 20px 22px',
+                    borderBottom:`1px solid ${isHighRole ? cfg.color + '12' : '#1e2517'}`,
+                    display:'flex',
+                    flexDirection:isMobile ? 'row' : 'column',
+                    alignItems:isMobile ? 'center' : 'flex-start',
+                    gap:isMobile ? 14 : 0,
+                    position:'relative', overflow:'hidden',
+                  }}
+                >
+                  {isHighRole && (
+                    <div style={{
+                      position:'absolute', top:-20, right:-20,
+                      width:100, height:100,
+                      background:`radial-gradient(circle, ${cfg.color}12, transparent 70%)`,
+                      pointerEvents:'none',
+                    }} />
+                  )}
+                  <Avatar
+                    user={{...user, avatar:previewAvatar}}
+                    size={isMobile ? 46 : 64}
+                    canEdit={false}
+                  />
+                  <div className="sidebar-user-text" style={{marginTop:isMobile ? 0 : 16, minWidth:0}}>
+                    <p style={{
+                      fontFamily:'Syne,sans-serif',
+                      fontSize:isMobile ? 15 : 15.5,
+                      fontWeight:700,
+                      color:'#e8f0e0', margin:0, lineHeight:1.2,
+                      overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                    }}>{user?.name}</p>
+                    <p style={{
+                      fontSize:11, color:'#3a4a2a', marginTop:4,
+                      overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                      fontFamily:'Space Grotesk,sans-serif',
+                    }}>{user?.email}</p>
+                    <div style={{marginTop:8}}><RoleBadge role={user?.role} /></div>
+                  </div>
+                </div>
+
+                {/* Desktop Nav */}
+                <nav className="sidebar-nav-desktop"
+                  style={{padding:'12px 10px', display:'flex', flexDirection:'column', gap:3, flex:1}}>
+                  {NAV_ITEMS.map((item, i) => {
+                    const isActive = activeTab === item.id;
+                    const cls = item.soon ? 'disabled' : isActive ? 'active' : 'inactive';
+                    return (
+                      <button key={item.id}
+                        onClick={() => !item.soon && setActiveTab(item.id)}
+                        className={`nav-btn ${cls} fu${i+1}`}>
+                        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"
+                          stroke="currentColor" strokeWidth={isActive ? 2.2 : 1.8}
+                          style={{flexShrink:0}}>
+                          {NAV_ICONS[item.id]}
+                        </svg>
+                        <span>{item.label}</span>
+                        {item.soon && (
+                          <span style={{
+                            marginLeft:'auto', fontSize:9, fontWeight:700,
+                            letterSpacing:'.1em', color:'#567245',
+                            background:'rgba(86,114,69,0.1)',
+                            border:'1px solid rgba(86,114,69,0.2)',
+                            padding:'2px 7px', borderRadius:5,
+                            fontFamily:'Space Grotesk,sans-serif',
+                          }}>SOON</span>
+                        )}
+                        {isActive && <span className="nav-indicator" />}
+                      </button>
+                    );
+                  })}
+                </nav>
+
+                {/* Mobile Tab Bar */}
+                <div className="mobile-tab-bar">
+                  {NAV_ITEMS.map((item) => {
+                    const isActive = activeTab === item.id;
+                    const cls = item.soon ? 'disabled' : isActive ? 'active' : '';
+                    return (
+                      <button key={item.id}
+                        onClick={() => !item.soon && setActiveTab(item.id)}
+                        className={`mobile-nav-btn ${cls}`}>
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"
+                          stroke="currentColor" strokeWidth={isActive ? 2.2 : 1.6}
+                          style={{flexShrink:0}}>
+                          {NAV_ICONS[item.id]}
+                        </svg>
+                        <span>{item.mobileLabel}</span>
+                        {item.soon && (
+                          <span style={{
+                            position:'absolute', top:4, right:'50%', transform:'translateX(10px)',
+                            fontSize:7, fontWeight:700, color:'#567245',
+                            background:'rgba(86,114,69,0.15)',
+                            border:'1px solid rgba(86,114,69,0.2)',
+                            padding:'1px 4px', borderRadius:3,
+                            fontFamily:'Space Grotesk,sans-serif', letterSpacing:'.08em',
+                          }}>NEW</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Bottom accent (desktop) */}
+                <div className="sidebar-bottom-accent" style={{padding:'0 20px 20px'}}>
+                  <div style={{
+                    height:1, borderRadius:1,
+                    background:isHighRole
+                      ? `linear-gradient(90deg,transparent,${cfg.color}50,transparent)`
+                      : 'linear-gradient(90deg,transparent,rgba(249,115,22,0.25),transparent)'
+                  }} />
+                </div>
+              </div>
+
+              {/* ── Content ── */}
+              <div className="profile-content">
+                {renderContent()}
+              </div>
+
+            </div>
+          </div>
+
+          {isMobile && <div style={{height:28, background:'#0a0d07'}} />}
+        </div>
+      </div>
+    </>
+  );
+}
