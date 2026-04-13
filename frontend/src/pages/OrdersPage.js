@@ -81,6 +81,7 @@ const STYLES = `
 `;
 
 const STATUS_CONFIG = {
+  paid_unconfirmed: { color:'#f97316', bg:'rgba(249,115,22,0.08)', border:'rgba(249,115,22,0.2)', dot:'#f97316', label:'Awaiting Confirmation' },
   pending:    { color:'#fbbf24', bg:'rgba(251,191,36,0.08)',   border:'rgba(251,191,36,0.2)',  dot:'#fbbf24', label:'Pending'    },
   paid:       { color:'#60a5fa', bg:'rgba(96,165,250,0.08)',   border:'rgba(96,165,250,0.2)',  dot:'#60a5fa', label:'Paid'       },
   processing: { color:'#60a5fa', bg:'rgba(96,165,250,0.08)',   border:'rgba(96,165,250,0.2)',  dot:'#60a5fa', label:'Processing' },
@@ -252,9 +253,10 @@ export function OrdersPage() {
                     border:`1px solid ${order.status === 'completed' ? 'rgba(34,197,94,0.2)' : '#2a3420'}`,
                     display:'flex', alignItems:'center', justifyContent:'center', fontSize:18,
                   }}>
-                    {order.status === 'completed' ? '✅' :
-                     order.status === 'failed'    ? '❌' :
-                     order.status === 'pending'   ? '⏳' : '📦'}
+                   {order.status === 'completed'        ? '✅' :
+ order.status === 'failed'           ? '❌' :
+ 
+ order.status === 'paid_unconfirmed' ? '🕐' : '📦'}
                   </div>
 
                   {/* Info */}
@@ -442,6 +444,30 @@ export function OrderDetailPage() {
             </div>
           </div>
         )}
+        {/* Awaiting Confirmation Banner */}
+{order.status === 'paid_unconfirmed' && (
+  <div className="fade-up" style={{
+    background:'rgba(249,115,22,0.05)', border:'1px solid rgba(249,115,22,0.2)',
+    borderRadius:14, padding:'14px 20px', marginBottom:20,
+    display:'flex', alignItems:'center', gap:12,
+  }}>
+    <div style={{
+      width:36, height:36, borderRadius:10,
+      background:'rgba(249,115,22,0.1)', border:'1px solid rgba(249,115,22,0.2)',
+      display:'flex', alignItems:'center', justifyContent:'center', fontSize:18,
+      flexShrink:0,
+    }}>🕐</div>
+    <div>
+      <p style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:700,
+        fontSize:15, color:'#f97316', margin:'0 0 2px' }}>
+        Payment Received — Awaiting Confirmation
+      </p>
+      <p style={{ fontSize:12, color:'#6a4a2a', margin:0 }}>
+        Your order is being reviewed. Codes will appear here once confirmed.
+      </p>
+    </div>
+  </div>
+)}
 
         {/* Items */}
         <div style={{ display:'flex', flexDirection:'column', gap:14, marginBottom:20 }}>
@@ -475,7 +501,7 @@ export function OrderDetailPage() {
               </div>
 
               {/* Codes Section */}
-              {item.codes?.length > 0 && (
+              {item.codes?.length > 0 && order.status === 'completed' && (
                 <div>
                   <div style={{ height:1, background:'#2a3420', margin:'0 0 14px' }} />
 

@@ -280,19 +280,7 @@ function StripeForm({ onSubmit, loading, total }) {
       </div>
 
       {/* Test Mode Notice */}
-      <div style={{
-        background:'rgba(99,91,255,0.06)', border:'1px solid rgba(99,91,255,0.2)',
-        borderRadius:10, padding:'10px 14px',
-        display:'flex', alignItems:'flex-start', gap:8,
-      }}>
-        <span style={{ fontSize:14 }}>🧪</span>
-        <div>
-          <p style={{ fontSize:11, color:'rgba(99,91,255,0.9)', fontWeight:600, margin:0 }}>Test Mode</p>
-          <p style={{ fontSize:11, color:'rgba(99,91,255,0.6)', margin:'2px 0 0' }}>
-            Use card: <span style={{ fontFamily:'monospace', color:'rgba(99,91,255,0.9)' }}>4242 4242 4242 4242</span> · Any future date · Any CVC
-          </p>
-        </div>
-      </div>
+      
 
       <button type="submit" disabled={loading} className="pay-btn pay-btn-stripe" style={{ marginTop:8 }}>
         {loading ? (
@@ -342,19 +330,7 @@ function PayPalForm({ onSubmit, loading, total }) {
       </div>
 
       {/* Test Mode Notice */}
-      <div style={{
-        background:'rgba(0,156,222,0.06)', border:'1px solid rgba(0,156,222,0.2)',
-        borderRadius:10, padding:'10px 14px',
-        display:'flex', alignItems:'flex-start', gap:8,
-      }}>
-        <span style={{ fontSize:14 }}>🧪</span>
-        <div>
-          <p style={{ fontSize:11, color:'rgba(0,156,222,0.9)', fontWeight:600, margin:0 }}>Sandbox Mode</p>
-          <p style={{ fontSize:11, color:'rgba(0,156,222,0.6)', margin:'2px 0 0' }}>
-            Use your PayPal Sandbox test account to complete payment
-          </p>
-        </div>
-      </div>
+  
 
       <button
         onClick={onSubmit}
@@ -392,7 +368,7 @@ export default function CheckoutPage() {
   const [initLoading, setInitLoading] = useState(true);
   const [orderId, setOrderId]     = useState('');
   const [error, setError]         = useState('');
-
+const [submitted, setSubmitted]     = useState(false);
   useEffect(() => {
     if (isEmpty) { navigate('/cart'); return; }
     initCheckout();
@@ -417,36 +393,40 @@ export default function CheckoutPage() {
   };
 
   // ── Stripe Handler (هنوصّله بعدين بالـ Keys) ─────────────────────────────
-  const handleStripeSubmit = async (cardData) => {
-    setLoading(true);
-    try {
-      // مؤقتاً — confirm عادي
-      await paymentAPI.confirmPayment(orderId);
-      clearCart();
-      toast.success('Payment successful! 🎉 Codes sent to your email');
-      navigate(`/orders/${orderId}`);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Payment failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+const handleStripeSubmit = async (cardData) => {
+  if (submitted) return;
+  setSubmitted(true);
+  setLoading(true);
+  try {
+    await paymentAPI.confirmPayment(orderId);
+    clearCart();
+    toast.success('Payment successful! 🎉');
+    navigate(`/orders/${orderId}`);
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Payment failed');
+    setSubmitted(false); // لو فشل — اسمح بالمحاولة تاني
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ── PayPal Handler (هنوصّله بعدين بالـ Keys) ─────────────────────────────
-  const handlePayPalSubmit = async () => {
-    setLoading(true);
-    try {
-      // مؤقتاً — confirm عادي
-      await paymentAPI.confirmPayment(orderId);
-      clearCart();
-      toast.success('PayPal payment successful! 🎉');
-      navigate(`/orders/${orderId}`);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'PayPal payment failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+const handlePayPalSubmit = async () => {
+  if (submitted) return;
+  setSubmitted(true);
+  setLoading(true);
+  try {
+    await paymentAPI.confirmPayment(orderId);
+    clearCart();
+    toast.success('PayPal payment successful! 🎉');
+    navigate(`/orders/${orderId}`);
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'PayPal payment failed');
+    setSubmitted(false);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (initLoading) return (

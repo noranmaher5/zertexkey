@@ -7,5 +7,6 @@ router.get('/my', protect, ctrl.getMyOrders);
 router.get('/', protect, authorize('admin'), ctrl.getAllOrders);
 router.get('/:id', protect, ctrl.getOrder);
 router.put('/:id/status', protect, authorize('admin'), ctrl.updateOrderStatus);
+router.post('/:id/confirm-and-send', protect, authorize('admin'), ctrl.confirmAndSend); // ← أضفه هنا
 
 module.exports = router;
