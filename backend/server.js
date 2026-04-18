@@ -11,24 +11,33 @@ dotenv.config();
 
 const app = express();
 
-// ─── CORS Middleware (Must be first!) ──────────────────────────────────────────
+// ─── CORS Middleware (Updated & Fixed) ──────────────────────────────────────────
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:3000',
-  'https://zertexkey-2orq-bfxsyfecn-noran-mahers-projects.vercel.app'
-].filter(Boolean);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+  'https://zertexkey-2orq.vercel.app'
+].map(url => url?.replace(/\/$/, "")); // كود إضافي بيمسح أي / في آخر الرابط أوتوماتيكياً
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // 1. السماح لو مفيش origin (زي الـ Health check)
+    if (!origin) return callback(null, true);
+
+    const cleanOrigin = origin.replace(/\/$/, ""); // مسح السلاش من الرابط اللي جاي من المتصفح
+
+    // 2. السماح لو الرابط في القائمة أو ينتهي بـ vercel.app
+    if (allowedOrigins.includes(cleanOrigin) || cleanOrigin.endsWith('.vercel.app')) {
       callback(null, true);
     } else {
+      // السطر ده مهم جداً: هيطبع لك في Railway Logs الرابط المرفوض بالظبط
+      console.error(`❌ CORS Rejected: ${origin}`); 
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 // ─── Security Middleware ───────────────────────────────────────────────────────
 app.use(helmet());
 app.use(mongoSanitize());
