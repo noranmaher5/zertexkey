@@ -17,7 +17,7 @@ const getEmbedUrl = (url) => {
     : null;
 };
 
-const API_BASE_URL = 'http://localhost:5001';
+const API_BASE_URL = 'https://zertexkey-production.up.railway.app';
 
 const StarRating = ({ value = 0, size = 14, color = '#fbbf24' }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>

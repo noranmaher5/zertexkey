@@ -14,7 +14,8 @@ const app = express();
 // ─── CORS Middleware (Must be first!) ──────────────────────────────────────────
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'https://zertexkey-2orq-bfxsyfecn-noran-mahers-projects.vercel.app'
 ].filter(Boolean);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors({

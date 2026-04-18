@@ -33,12 +33,15 @@ export const AuthProvider = ({ children }) => {
       .then(() => {
         if (alive) setBackendOnline(true);
       })
-      .catch(() => {
-        if (!alive) return;
-        setBackendOnline(false);
-        console.warn('Backend is unreachable');
-        toast.error('Backend is unreachable. Please start server.');
-      });
+      .catch((err) => {
+  if (err.code === "ECONNABORTED") {
+    toast.error("Server is slow (timeout)");
+  } else if (err.response?.status === 401) {
+    toast.error("Unauthorized");
+  } else if (!err.response) {
+    toast.error("Network/CORS issue");
+  }
+});
 
     return () => {
       alive = false;

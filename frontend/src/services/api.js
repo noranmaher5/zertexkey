@@ -2,10 +2,9 @@ import axios from 'axios';
 
 // إنشاء نسخة Axios مع الإعدادات الافتراضية
 const API = axios.create({
-  baseURL: 'http://localhost:5001/api' || '/api',
+baseURL: "https://zertexkey-production.up.railway.app/api",
   timeout: 30000,
 });
-
 // ─────────────────────────────────────────────────────────────────────────────
 // INTERCEPTORS (المراقبات)
 // ─────────────────────────────────────────────────────────────────────────────
