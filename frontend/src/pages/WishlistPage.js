@@ -5,12 +5,15 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
-const API_BASE_URL = 'http://localhost:5001';
+const API_ORIGIN =
+  process.env.REACT_APP_API_ORIGIN ||
+  process.env.REACT_APP_BACKEND_ORIGIN ||
+  'https://zertexkey-production.up.railway.app';
 
 const getImageUrl = (img) => {
   if (!img) return `https://placehold.co/400x300/0d1f0e/22c55e?text=No+Image`;
   if (img.startsWith('http')) return img;
-  return `${API_BASE_URL}${img}`;
+  return `${API_ORIGIN}${img}`;
 };
 
 export default function WishlistPage() {

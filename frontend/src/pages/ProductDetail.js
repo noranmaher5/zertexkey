@@ -17,7 +17,10 @@ const getEmbedUrl = (url) => {
     : null;
 };
 
-const API_BASE_URL = 'https://zertexkey-production.up.railway.app';
+const API_ORIGIN =
+  process.env.REACT_APP_API_ORIGIN ||
+  process.env.REACT_APP_BACKEND_ORIGIN ||
+  'https://zertexkey-production.up.railway.app';
 
 const StarRating = ({ value = 0, size = 14, color = '#fbbf24' }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -299,7 +302,7 @@ export default function ProductDetail() {
   const getImageUrl = (img) => {
     if (!img) return `https://placehold.co/600x600/182512/22c55e?text=No+Image`;
     if (img.startsWith('http')) return img;
-    return `${API_BASE_URL}${img}`;
+    return `${API_ORIGIN}${img}`;
   };
 
   const handleAddToCart = () => {

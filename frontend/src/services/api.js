@@ -1,8 +1,13 @@
 import axios from 'axios';
 
 // إنشاء نسخة Axios مع الإعدادات الافتراضية
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL ||
+  process.env.REACT_APP_BACKEND_URL ||
+  `${window.location.origin.replace(/\/$/, '')}/api`;
+
 const API = axios.create({
-baseURL: "https://zertexkey-production.up.railway.app/api",
+baseURL: API_BASE_URL,
   timeout: 30000,
 });
 // ─────────────────────────────────────────────────────────────────────────────
