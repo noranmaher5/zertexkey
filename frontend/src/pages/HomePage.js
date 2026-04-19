@@ -886,7 +886,11 @@ const StatsStrip = memo(function StatsStrip() {
 function FeaturedCard({ product }) {
   const { addItem } = useCart();
   const [hovered, setHovered] = useState(false);
-  const isOutOfStock = product.stock === 0 && !product.isUnlimited;
+const isOutOfStock = !product.isUnlimited && (
+  Number(product.availableStock ?? product.stock ?? 0) <= 0 || product.isOutOfStock
+
+  
+);
   const discount = product.discountPercentage ||
     (product.originalPrice > product.price
       ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -1000,6 +1004,8 @@ function FeaturedCard({ product }) {
       </div>
     </div>
   );
+
+
 }
 
 // ─────────────────────────────────────────────

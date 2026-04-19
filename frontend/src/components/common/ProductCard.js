@@ -32,7 +32,7 @@ export default function ProductCard({ product }) {
   const cat   = product.category?.toLowerCase() || '';
   const color = CATEGORY_COLORS[cat] || { text: '#22c55e', bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.25)' };
   const label = product.platform || product.category || '';
-  const isOutOfStock = product.stock === 0 && !product.isUnlimited;
+  const isOutOfStock = !product.isUnlimited && (Number(product.stock ?? 0) <= 0 || product.isOutOfStock);
 
   const toggleWishlist = async (e) => {
     e.preventDefault();

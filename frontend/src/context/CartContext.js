@@ -37,7 +37,7 @@ export const CartProvider = ({ children }) => {
   }
 
   if (!product?.isUnlimited) {
-    const stock = Number(product?.stock || 0);
+const stock = Number(product?.availableStock ?? product?.stock ?? 0);
     if (stock <= 0) {
       toast.error('Product is out of stock');
       return false;
@@ -121,16 +121,27 @@ const updateQuantity = useCallback(async (productId, quantity) => {
     return match ? { ...i, quantity } : i;
   }));
 
+  // ← توست فوري قبل الـ API
+  toast.success('Cart updated', {
+    id: 'cart-toast',
+    duration: 1500,
+    style: {
+      background: '#1a1a1a',
+      color: '#fff',
+      border: '1px solid #22c55e',
+      fontSize: '14px',
+      fontFamily: 'Outfit, sans-serif'
+    }
+  });
+
   try {
-    // بنبعت productId للـ backend مش cartItem._id
     const res = await cartAPI.updateItem(id, quantity);
     setItems(res.data.cart.items || []);
   } catch (err) {
     setItems(prevItems);
-    toast.error('Failed to update quantity');
+    toast.error('Failed to update quantity', { id: 'cart-toast' });
   }
 }, [items]);
-
   const clearCart = useCallback(async () => {
     const prevItems = items;
     setItems([]);
