@@ -393,17 +393,13 @@ export default function CheckoutPage() {
       const newOrderId = intentRes.data.orderId;
 
       // نأكد الدفع
-      await paymentAPI.confirmPayment(newOrderId);
-
       clearCart();
       toast.success(
-        selectedMethod === 'paypal'
-          ? 'PayPal payment successful! 🎉'
-          : 'Payment successful! 🎉'
+        'Order placed successfully. Waiting for admin confirmation.'
       );
       navigate(`/orders/${newOrderId}`);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Payment failed. Please try again.');
+      toast.error(err.response?.data?.message || 'Failed to place order. Please try again.');
     } finally {
       setLoading(false);
       setIsSubmitting(false);

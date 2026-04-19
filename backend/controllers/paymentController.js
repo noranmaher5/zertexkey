@@ -124,11 +124,22 @@ exports.confirmPayment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // لو الأوردر خلاص مكتمل، مش هنعمل حاجة
-    if (order.status === 'completed') {
-       return res.json({ success: true, order, alreadyProcessed: true });
+    // لو الأوردر خلاص في الحالة الصحيحة
+    if (order.status === 'paid_unconfirmed' || order.status === 'completed') {
+      return res.json({
+        success: true,
+        order,
+        alreadyProcessed: true
+      });
     }
 
+    // لو كان في حالة تانية (مثل failed)
+    if (order.status !== 'paid_unconfirmed') {
+      return res.status(400).json({ success: false, message: 'Order cannot be processed' });
+    }
+
+    order.status = 'completed';
+    await order.save();
 
     res.json({
       success: true,
@@ -143,3 +154,5 @@ exports.confirmPayment = async (req, res, next) => {
 exports.stripeWebhook = async (req, res) => {
   res.json({ received: true });
 };
+
+
