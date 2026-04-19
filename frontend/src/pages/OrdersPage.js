@@ -318,13 +318,26 @@ export function OrderDetailPage() {
   const [loading, setLoading]   = useState(true);
   const [showCodes, setShowCodes] = useState({});
   const [copied, setCopied]     = useState({});
+  // ✅ إخفاء/إظهار كل كود بشكل مستقل
+  const [revealedCodes, setRevealedCodes] = useState({});
 
-  useEffect(() => {
+  const fetchOrder = () => {
     orderAPI.getOne(id)
       .then(res => setOrder(res.data.order))
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchOrder();
   }, [id]);
+
+  // ✅ Auto-refresh كل 10 ثواني لو الأوردر لسه paid_unconfirmed
+  useEffect(() => {
+    if (!order || order.status !== 'paid_unconfirmed') return;
+    const interval = setInterval(fetchOrder, 10000);
+    return () => clearInterval(interval);
+  }, [order?.status]);
 
   const handleCopy = (code, key) => {
     navigator.clipboard.writeText(code);
@@ -559,9 +572,11 @@ export function OrderDetailPage() {
                       {item.codes.map((code, ci) => {
                         const codeVal = code.code || code;
                         const copyKey = `${idx}-${ci}`;
+                        const revealKey = `${idx}-${ci}`;
+                        const isRevealed = revealedCodes[revealKey];
                         return (
                           <div key={ci} className="code-box">
-                            <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0, flex:1 }}>
                               <span style={{
                                 fontSize:11, fontWeight:700,
                                 fontFamily:'Rajdhani,sans-serif',
@@ -572,13 +587,43 @@ export function OrderDetailPage() {
                               </span>
                               <span style={{
                                 fontFamily:'monospace', fontSize:14,
-                                color:'#c4d6a1', letterSpacing:'.12em',
+                                color: isRevealed ? '#c4d6a1' : '#4a5a3a',
+                                letterSpacing: isRevealed ? '.12em' : '.3em',
                                 overflow:'hidden', textOverflow:'ellipsis',
-                                whiteSpace:'nowrap',
+                                whiteSpace:'nowrap', flex:1,
+                                filter: isRevealed ? 'none' : 'blur(4px)',
+                                userSelect: isRevealed ? 'text' : 'none',
+                                transition: 'filter .2s',
                               }}>
-                                {codeVal}
+                                {isRevealed ? codeVal : '••••••••••••••••'}
                               </span>
                             </div>
+                            {/* Eye button */}
+                            <button
+                              onClick={() => setRevealedCodes(r => ({ ...r, [revealKey]: !r[revealKey] }))}
+                              title={isRevealed ? 'Hide code' : 'Reveal code'}
+                              style={{
+                                width:32, height:32, borderRadius:8, flexShrink:0,
+                                background:'rgba(86,114,69,0.08)',
+                                border:'1px solid rgba(86,114,69,0.2)',
+                                color: isRevealed ? '#22c55e' : '#889679',
+                                cursor:'pointer', display:'flex',
+                                alignItems:'center', justifyContent:'center',
+                                transition:'all .2s',
+                              }}
+                            >
+                              {isRevealed ? (
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                </svg>
+                              ) : (
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              )}
+                            </button>
+                            {/* Copy button */}
                             <button
                               className="copy-btn"
                               onClick={() => handleCopy(codeVal, copyKey)}

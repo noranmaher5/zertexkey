@@ -68,17 +68,14 @@ export default function AdminOrders() {
         setIsSubmitting(true);
         const loadingToast = toast.loading('Processing...');
         try {
-            // لو في item واحد بعت string عادي، لو أكثر بعت array
             const items = selectedOrder.items || [];
             const codesArray = items.map((_, idx) => manualCodes[idx] || '');
-            const deliveredCode = codesArray.length === 1 ? codesArray[0] : codesArray.join('\n---\n');
 
-            console.log('manualCodesPerItem:', codesArray);
             await orderAPI.confirmAndSend(selectedOrder._id, { 
-                deliveredCode,
                 deliveryMode,
-                // بعت الأكواد كـ array كمان عشان الـ backend يقدر يعالجها
                 manualCodesPerItem: codesArray,
+                // fallback لو item واحد بس
+                deliveredCode: codesArray[0] || '',
             });
             toast.success('Order fulfilled successfully', { id: loadingToast });
             setSelectedOrder(null);
