@@ -263,8 +263,6 @@ exports.updateOrderStatus = async (req, res, next) => {
 exports.confirmAndSend = async (req, res, next) => {
   try {
     const { deliveryMode = 'database', deliveredCode, manualCodesPerItem } = req.body;
-    console.log('>>> manualCodesPerItem:', manualCodesPerItem);
-console.log('>>> deliveredCode:', deliveredCode);
 
     let order = await Order.findById(req.params.id)
       .populate('items.product', 'name image category platform')
@@ -309,16 +307,16 @@ console.log('>>> deliveredCode:', deliveredCode);
         });
       }
 
-      // Manual delivery - كود مختلف لكل item
+      // كود مختلف لكل item
       const codesArray = Array.isArray(manualCodesPerItem) && manualCodesPerItem.length > 0
         ? manualCodesPerItem
-        : order.items.map(() => deliveredCode); // fallback للكود القديم
+        : order.items.map(() => deliveredCode);
 
       const missingCode = codesArray.some(c => !c || !String(c).trim());
       if (missingCode) {
         return res.status(400).json({
           success: false,
-          message: 'Code is required for every item in manual delivery'
+          message: 'Code is required for every item'
         });
       }
 
@@ -328,9 +326,8 @@ console.log('>>> deliveredCode:', deliveredCode);
       try {
         for (let i = 0; i < order.items.length; i++) {
           const item = order.items[i];
-          const itemCode = String(codesArray[i] || codesArray[0]).trim();
+          const itemCode = String(codesArray[i]).trim();
 
-          // Create the DigitalCode for this manual entry
           const newCode = new DigitalCode({
             product: item.product._id || item.product,
             code: itemCode,
@@ -344,9 +341,10 @@ console.log('>>> deliveredCode:', deliveredCode);
           
           await newCode.save({ session });
 
-          item.codes = [newCode._id];
-          item.name = item.product.name;
-          item.image = item.product.image;
+          // ✅ استخدم set عشان Mongoose يسجل التغيير في الـ subdocument
+          order.items[i].set('codes', [newCode._id]);
+          order.items[i].set('name', item.product.name);
+          order.items[i].set('image', item.product.image);
         }
 
         order.status = 'completed';
