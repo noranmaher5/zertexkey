@@ -60,22 +60,27 @@ export default function AdminOrders() {
 
         if (deliveryMode === 'manual') {
             const items = selectedOrder.items || [];
-            // تأكد إن كل item عنده كود
-            const missing = items.some((_, idx) => !manualCodes[idx]?.trim());
-            if (missing) return toast.error('Please enter a code for every item');
+            // تأكد إن كل quantity لكل item عندها كود
+            const missing = items.some((item, idx) =>
+                Array.from({ length: item.quantity }).some((_, qIdx) => !manualCodes[`${idx}_${qIdx}`]?.trim())
+            );
+            if (missing) return toast.error('Please enter a code for every item quantity');
         }
 
         setIsSubmitting(true);
         const loadingToast = toast.loading('Processing...');
         try {
             const items = selectedOrder.items || [];
-            const codesArray = items.map((_, idx) => manualCodes[idx] || '');
+            // codesArray = array of arrays, كل item فيها array بالكودات حسب الـ quantity
+            const codesArray = items.map((item, idx) =>
+                Array.from({ length: item.quantity }).map((_, qIdx) => manualCodes[`${idx}_${qIdx}`] || '')
+            );
 
             await orderAPI.confirmAndSend(selectedOrder._id, { 
                 deliveryMode,
                 manualCodesPerItem: codesArray,
                 // fallback لو item واحد بس
-                deliveredCode: codesArray[0] || '',
+                deliveredCode: codesArray[0]?.[0] || '',
             });
             toast.success('Order fulfilled successfully', { id: loadingToast });
             setSelectedOrder(null);
@@ -277,19 +282,25 @@ export default function AdminOrders() {
                                                     <p className="text-[11px] text-zinc-500">Qty: {item.quantity}</p>
                                                 </div>
                                             </div>
-                                            {/* Code Textarea */}
-                                            <label className="text-xs font-bold text-amber-400 mb-2 block">
-                                                Code for this item {selectedOrder.items.length > 1 ? `(${idx + 1}/${selectedOrder.items.length})` : ''}
-                                            </label>
-                                            <textarea
-                                                required
-                                                autoFocus={idx === 0}
-                                                value={manualCodes[idx] || ''}
-                                                onChange={(e) => setManualCodes(prev => ({ ...prev, [idx]: e.target.value }))}
-                                                placeholder={`Paste redeem code for ${item.product?.name || 'this item'}...`}
-                                                className="w-full bg-black border border-zinc-700 rounded-xl p-4 font-mono text-sm outline-none focus:border-amber-500 transition-all text-white resize-none"
-                                                rows={3}
-                                            />
+                                            {/* Code Textarea per quantity unit */}
+                                            {Array.from({ length: item.quantity }).map((_, qIdx) => (
+                                                <div key={qIdx} className={qIdx > 0 ? 'mt-3' : ''}>
+                                                    <label className="text-xs font-bold text-amber-400 mb-2 block">
+                                                        {item.quantity > 1
+                                                            ? `Code ${qIdx + 1} of ${item.quantity} — ${item.product?.name || 'Item'}`
+                                                            : `Code for ${item.product?.name || 'this item'}`}
+                                                    </label>
+                                                    <textarea
+                                                        required
+                                                        autoFocus={idx === 0 && qIdx === 0}
+                                                        value={manualCodes[`${idx}_${qIdx}`] || ''}
+                                                        onChange={(e) => setManualCodes(prev => ({ ...prev, [`${idx}_${qIdx}`]: e.target.value }))}
+                                                        placeholder={`Paste redeem code #${qIdx + 1} for ${item.product?.name || 'this item'}...`}
+                                                        className="w-full bg-black border border-zinc-700 rounded-xl p-4 font-mono text-sm outline-none focus:border-amber-500 transition-all text-white resize-none"
+                                                        rows={3}
+                                                    />
+                                                </div>
+                                            ))}
                                         </div>
                                     ))}
                                 </div>

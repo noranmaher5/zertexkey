@@ -307,16 +307,27 @@ exports.confirmAndSend = async (req, res, next) => {
         });
       }
 
-      // كود مختلف لكل item
-      const codesArray = Array.isArray(manualCodesPerItem) && manualCodesPerItem.length > 0
+      // codesArray = array of arrays — كل item فيها array بالكودات حسب الـ quantity
+      // الـ frontend بيبعت: [[code1, code2], [code3]] مثلاً
+      const rawCodes = Array.isArray(manualCodesPerItem) && manualCodesPerItem.length > 0
         ? manualCodesPerItem
-        : order.items.map(() => deliveredCode);
+        : order.items.map(() => [deliveredCode]);
 
-      const missingCode = codesArray.some(c => !c || !String(c).trim());
+      // normalize: لو جه string بدل array (fallback للقديم)، حوّله لـ array
+      const codesArray = rawCodes.map((entry, i) => {
+        if (Array.isArray(entry)) return entry;
+        return Array(order.items[i]?.quantity || 1).fill(String(entry));
+      });
+
+      // تأكد إن كل quantity لكل item عندها كود
+      const missingCode = codesArray.some((codes, i) => {
+        const qty = order.items[i]?.quantity || 1;
+        return codes.length < qty || codes.some(c => !c || !String(c).trim());
+      });
       if (missingCode) {
         return res.status(400).json({
           success: false,
-          message: 'Code is required for every item'
+          message: 'Code is required for every item quantity'
         });
       }
 
@@ -326,23 +337,30 @@ exports.confirmAndSend = async (req, res, next) => {
       try {
         for (let i = 0; i < order.items.length; i++) {
           const item = order.items[i];
-          const itemCode = String(codesArray[i]).trim();
+          const itemCodes = codesArray[i]; // array of strings حسب الـ quantity
+          const allocatedCodeIds = [];
 
-          const newCode = new DigitalCode({
-            product: item.product._id || item.product,
-            code: itemCode,
-            isUsed: true,
-            usedBy: order.user._id || order.user,
-            usedAt: new Date(),
-            order: order._id,
-            addedBy: req.user._id,
-            notes: 'Manual delivery via Admin Dashboard'
-          });
-          
-          await newCode.save({ session });
+          // loop على كل وحدة في الـ quantity
+          for (let q = 0; q < item.quantity; q++) {
+            const codeStr = String(itemCodes[q]).trim();
+
+            const newCode = new DigitalCode({
+              product: item.product._id || item.product,
+              code: codeStr,
+              isUsed: true,
+              usedBy: order.user._id || order.user,
+              usedAt: new Date(),
+              order: order._id,
+              addedBy: req.user._id,
+              notes: 'Manual delivery via Admin Dashboard'
+            });
+
+            await newCode.save({ session });
+            allocatedCodeIds.push(newCode._id);
+          }
 
           // ✅ استخدم set عشان Mongoose يسجل التغيير في الـ subdocument
-          order.items[i].set('codes', [newCode._id]);
+          order.items[i].set('codes', allocatedCodeIds);
           order.items[i].set('name', item.product.name);
           order.items[i].set('image', item.product.image);
         }

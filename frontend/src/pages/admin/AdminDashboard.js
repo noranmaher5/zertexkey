@@ -29,21 +29,23 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await adminAPI.getDashboard();
       setStats(res.data.stats);
     } catch (err) {
       toast.error('Terminal Error: Could not sync dashboard data');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadDashboardData();
+    const interval = setInterval(() => loadDashboardData(true), 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const navItems = [
     { to: '/admin/products', label: 'Inventory', icon: '📦' },
