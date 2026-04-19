@@ -8,23 +8,19 @@ router.get('/', ctrl.getProducts);
 router.get('/categories/stats', ctrl.getCategoryStats);
 router.get('/:id', ctrl.getProduct);
 
-// تقييم المنتج - متاح للمستخدمين الذين اشتروا المنتج فقط
-router.post('/:id/reviews', protect, ctrl.addReview);
-
-// حذف تقييم (لكل من لديه صلاحية إدارية)
-router.delete(
-  '/:productId/reviews/:reviewId',
-  protect,
-  authorize('owner', 'hidden', 'admin', 'manager', 'editor'),
-  ctrl.deleteReview
-);
-
 // إنشاء منتج جديد مع صورة
 router.post('/', protect, authorize('editor'), upload.single('image'), ctrl.createProduct);
 
 // تحديث منتج مع صورة
 router.put('/:id', protect, authorize('editor'), upload.single('image'), ctrl.updateProduct);
+
+// حذف منتج
 router.delete('/:id', protect, authorize('admin'), ctrl.deleteProduct);
+
+// إضافة تقييم - للمشترين فقط
 router.post('/:id/reviews', protect, ctrl.addReview);
+
+// حذف تقييم - للأدمنز فقط
+router.delete('/:productId/reviews/:reviewId', protect, authorize('editor'), ctrl.deleteReview);
 
 module.exports = router;

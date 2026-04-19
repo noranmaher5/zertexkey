@@ -1,6 +1,8 @@
 const Product = require('../models/Product');
 const DigitalCode = require('../models/DigitalCode');
 const Order = require('../models/Order');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
 
 // GET ALL PRODUCTS
 exports.getProducts = async (req, res, next) => {
@@ -66,12 +68,6 @@ exports.getProducts = async (req, res, next) => {
       .skip(skip)
       .limit(Number(limit))
       .select('-reviews');
-
-    // تم حذف .select('-reviews') لكي تظهر التعليقات في الداشبورد
-    const products = await Product.find(query)
-      .sort(sortBy)
-      .skip(skip)
-      .limit(Number(limit));
 
     res.json({
       success: true,
