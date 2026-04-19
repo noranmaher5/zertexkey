@@ -193,7 +193,7 @@ exports.getUsers = async (req, res, next) => {
             $map: {
               input: '$orderHistory',
               as: 'order',
-              in: { _id: '$$order._id', totalAmount: '$$order.totalAmount', createdAt: '$$order.createdAt', items: '$$order.items' }
+              in: { _id: '$$order._id', totalAmount: '$$order.totalAmount', createdAt: '$$order.createdAt', items: '$$order.items', paymentMethod: '$$order.paymentMethod' }
             }
           },
           totalSpent: { $sum: '$orderHistory.totalAmount' },

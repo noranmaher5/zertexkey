@@ -144,6 +144,14 @@ export default function AdminUsers() {
                       <div className="flex flex-col gap-1">
                         <span className="text-xs text-zinc-600">Batch ID: {order._id.slice(-8)}</span>
                         <span className="text-sm font-semibold text-white">{new Date(order.createdAt).toDateString()}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md w-fit"
+                          style={{
+                            background: order.paymentMethod === 'paypal' ? 'rgba(0,112,240,0.1)' : 'rgba(99,91,255,0.1)',
+                            color: order.paymentMethod === 'paypal' ? '#0070f0' : '#635bff',
+                            border: `1px solid ${order.paymentMethod === 'paypal' ? 'rgba(0,112,240,0.3)' : 'rgba(99,91,255,0.3)'}`,
+                          }}>
+                          {order.paymentMethod === 'paypal' ? '🅿 PayPal' : '💳 Stripe'}
+                        </span>
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="text-right">
