@@ -246,7 +246,7 @@ exports.addReview = async (req, res, next) => {
       title: 'New Review Received',
       message: `User ${req.user.name} reviewed ${product.name}`,
       metadata: { productId: product._id },
-      actionUrl: '/admin/products'
+      actionUrl: `/products/${product.slug || product._id}`
     });
 
     res.status(201).json({ success: true, message: 'Review added' });
