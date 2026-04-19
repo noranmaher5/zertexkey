@@ -70,8 +70,8 @@ exports.fulfillOrder = async (orderId) => {
     .populate('items.product', 'name image category platform')
     .populate('user', 'name email');
 
-  // ✅ يشتغل فقط لو paid_unconfirmed
-  if (!order || order.status !== 'paid_unconfirmed') {
+  // ✅ يشتغل لو الأوردر لسه ما اتسلّمش، سواء paid_unconfirmed أو failed
+  if (!order || !['paid_unconfirmed', 'failed'].includes(order.status)) {
     throw new Error('Order not ready for fulfillment');
   }
 
@@ -205,7 +205,7 @@ exports.updateOrderStatus = async (req, res, next) => {
       if (order.status === 'completed') {
         return res.json({ success: true, order });
       }
-      if (order.status !== 'paid_unconfirmed') {
+      if (!['paid_unconfirmed', 'failed'].includes(order.status)) {
         return res.status(400).json({
           success: false,
           message: 'Order not ready for completion'
@@ -283,7 +283,7 @@ exports.confirmAndSend = async (req, res, next) => {
       });
     }
 
-    if (order.status !== 'paid_unconfirmed') {
+    if (!['paid_unconfirmed', 'failed'].includes(order.status)) {
       return res.status(400).json({
         success: false,
         message: 'Order not ready for confirmation'

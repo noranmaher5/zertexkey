@@ -153,7 +153,7 @@ export default function AdminOrders() {
                                                 <button onClick={() => setViewOrder(order)} className="p-2 text-zinc-400 hover:text-white transition-colors" title="View Details">
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                                 </button>
-                                                {order.status === 'paid_unconfirmed' && (
+                                                {['paid_unconfirmed', 'failed'].includes(order.status) && (
                                                     <button onClick={() => setSelectedOrder(order)} className="bg-white text-black text-xs font-bold px-4 py-2 rounded-lg hover:bg-zinc-200 transition-colors">
                                                         Fulfill
                                                     </button>
@@ -226,7 +226,7 @@ export default function AdminOrders() {
                                 <p className="text-xs text-zinc-500 font-normal">Total Settlement</p>
                                 <p className="text-2xl font-bold text-white">${viewOrder.totalAmount?.toFixed(2)}</p>
                             </div>
-                            {viewOrder.status === 'paid_unconfirmed' && (
+                            {['paid_unconfirmed', 'failed'].includes(viewOrder.status) && (
                                 <button 
                                     onClick={() => { setViewOrder(null); setSelectedOrder(viewOrder); }} 
                                     className="bg-white text-black px-8 py-3 rounded-xl font-bold text-sm hover:bg-zinc-200 transition-colors"
@@ -245,7 +245,9 @@ export default function AdminOrders() {
                     <div className="absolute inset-0" onClick={() => setSelectedOrder(null)} />
                     <div className="relative w-full max-w-lg bg-zinc-900 border border-white/5 rounded-[2.5rem] p-10 shadow-2xl">
                         <h2 className="text-2xl font-bold text-white mb-2">Fulfill Order</h2>
-                        <p className="text-zinc-500 text-sm mb-8 font-medium">Sending digital asset to {selectedOrder.user?.name}</p>
+                        <p className="text-zinc-500 text-sm mb-8 font-medium">
+                            Sending digital asset to {selectedOrder.user?.name} for a {selectedOrder.status === 'failed' ? 'failed' : 'pending'} order
+                        </p>
                         
                         {/* Delivery Mode Selector */}
                         <div className="grid grid-cols-2 gap-3 mb-6">
