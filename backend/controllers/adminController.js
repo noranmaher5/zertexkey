@@ -1,10 +1,9 @@
-const Order = require('../models/Order');
-const Product = require('../models/Product');
-const DigitalCode = require('../models/DigitalCode');
 const User = require('../models/User');
+const Product = require('../models/Product');
+const Order = require('../models/Order');
+const DigitalCode = require('../models/DigitalCode');
+const Settings = require('../models/Settings');
 const Log = require('../models/Log');
-const emailService = require('../services/emailService');
-const NotificationService = require('../controllers/notificationController');
 
 // Helper: create an admin log entry (silent fail)
 const createLog = async (admin, action, target, details = '') => {
@@ -21,370 +20,263 @@ const createLog = async (admin, action, target, details = '') => {
   }
 };
 
-
-// @GET /api/orders/my
-exports.getMyOrders = async (req, res, next) => {
+// 1. إحصائيات لوحة التحكم
+exports.getDashboardStats = async (req, res, next) => {
   try {
-    const orders = await Order.find({ user: req.user.id })
-      .populate('items.product', 'name image category')
-      .populate('items.codes', 'code')
-      .sort({ createdAt: -1 });
-
-    res.json({ success: true, orders });
-  } catch (err) {
-    next(err);
-  }
-};
-
-
-// @GET /api/orders/:id
-exports.getOrder = async (req, res, next) => {
-  try {
-    const order = await Order.findById(req.params.id)
-      .populate('items.product', 'name image category platform')
-      .populate('items.codes', 'code');
-
-    if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found' });
-    }
-
-    if (
-      order.user.toString() !== req.user.id &&
-      !req.user.hasPermission('admin')
-    ) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
-    }
-
-    res.json({ success: true, order });
-  } catch (err) {
-    next(err);
-  }
-};
-
-
-
-// ✅ CORE FUNCTION (تم تصحيحه)
-exports.fulfillOrder = async (orderId) => {
-
-  const order = await Order.findById(orderId)
-    .populate('items.product', 'name image category platform')
-    .populate('user', 'name email');
-
-  // ✅ يشتغل فقط لو paid_unconfirmed
-  if (!order || !['paid_unconfirmed', 'failed'].includes(order.status)) {
-    throw new Error('Order not ready for fulfillment');
-  }
-
-  const session = await Order.startSession();
-  session.startTransaction();
-
-  try {
-
-    for (const item of order.items) {
-
-      const allocatedCodes = [];
-
-      for (let i = 0; i < item.quantity; i++) {
-
-        const code = await DigitalCode.findOneAndUpdate(
-          {
-            product: item.product._id,
-            isUsed: false
-          },
-          {
-            isUsed: true,
-            usedBy: order.user._id,
-            usedAt: new Date(),
-            order: order._id
-          },
-          {
-            new: true,
-            session
+    const [
+      totalUsers, totalProducts, totalOrders,
+      revenueData, recentOrders, lowStockProducts,
+      ordersByStatus, monthlySales, siteSettings
+    ] = await Promise.all([
+      User.countDocuments({ isActive: true }),
+      Product.countDocuments({ isActive: true }),
+      Order.countDocuments({ status: { $in: ['paid', 'completed', 'paid_unconfirmed'] } }),
+      Order.aggregate([
+        { $match: { status: { $in: ['paid', 'completed'] } } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+      ]),
+      Order.find()
+        .populate('user', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(8),
+      Product.find({ isActive: true, stock: { $lte: 5 }, isUnlimited: { $ne: true } })
+        .sort({ stock: 1 })
+        .limit(10)
+        .select('name stock category'),
+      Order.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]),
+      Order.aggregate([
+        {
+          $match: {
+            status: { $in: ['paid', 'completed'] },
+            createdAt: { $gte: new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000) }
           }
-        );
-
-        if (!code) {
-          throw new Error(`Out of stock: ${item.product.name}`);
-        }
-
-        allocatedCodes.push(code._id);
-
-        await Product.findByIdAndUpdate(
-          item.product._id,
-          {
-            $inc: { stock: -1, totalSold: 1 }
-          },
-          { session }
-        );
-      }
-
-      item.codes = allocatedCodes;
-      item.name = item.product.name;
-      item.image = item.product.image;
-    }
-
-    // ✅ هنا الصح
-    order.status = 'completed';
-
-    await order.save({ session });
-
-    await User.findByIdAndUpdate(
-      order.user._id,
-      { $addToSet: { orders: order._id } },
-      { session }
-    );
-
-    await session.commitTransaction();
-
-    return order;
-
-  } catch (err) {
-
-    await session.abortTransaction();
-
-    order.status = 'failed';
-    await order.save();
-
-    throw err;
-
-  } finally {
-    session.endSession();
-  }
-};
-
-
-
-// @GET /api/orders (admin)
-exports.getAllOrders = async (req, res, next) => {
-  try {
-    const { status, page = 1, limit = 20 } = req.query;
-
-    const query = {};
-    if (status) query.status = status;
-
-    const total = await Order.countDocuments(query);
-
-    const orders = await Order.find(query)
-      .populate('user', 'name email')
-      .populate('items.product', 'name image')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+        },
+        {
+          $group: {
+            _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+            revenue: { $sum: '$totalAmount' },
+            orders: { $sum: 1 }
+          }
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } }
+      ]),
+      Settings.findOne()
+    ]);
 
     res.json({
       success: true,
-      total,
-      page: Number(page),
-      pages: Math.ceil(total / limit),
-      orders
+      stats: {
+        totalUsers,
+        totalProducts,
+        totalOrders,
+        totalRevenue: revenueData[0]?.total || 0,
+        recentOrders,
+        lowStockProducts,
+        ordersByStatus: Object.fromEntries(ordersByStatus.map(s => [s._id, s.count])),
+        monthlySales,
+        maintenanceMode: siteSettings?.maintenanceMode ?? false,
+        emailNotifications: {
+          orderConfirmation: siteSettings?.emailNotifications?.orderConfirmation ?? true,
+          welcomeEmail:      siteSettings?.emailNotifications?.welcomeEmail      ?? true,
+          lowStockAlert:     siteSettings?.emailNotifications?.lowStockAlert     ?? true,
+          adminNewOrder:     siteSettings?.emailNotifications?.adminNewOrder     ?? false,
+        }
+      }
     });
-
   } catch (err) {
     next(err);
   }
 };
 
-
-
-// @PUT /api/orders/:id/status (admin)
-exports.updateOrderStatus = async (req, res, next) => {
+// 2. تحديث إعدادات النظام
+exports.updateSettings = async (req, res, next) => {
   try {
+    const { maintenanceMode, emailNotifications } = req.body;
+    let settings = await Settings.findOne();
+    if (!settings) settings = new Settings();
+
+    if (typeof maintenanceMode === 'boolean') {
+      settings.maintenanceMode = maintenanceMode;
+      await createLog(req.user, maintenanceMode ? 'MAINTENANCE_ON' : 'MAINTENANCE_OFF', 'System Settings', `Maintenance mode set to ${maintenanceMode}`);
+    }
+
+    if (emailNotifications && typeof emailNotifications === 'object') {
+      settings.emailNotifications = {
+        ...((settings.emailNotifications || {}).toObject?.() || settings.emailNotifications || {}),
+        ...emailNotifications
+      };
+      settings.markModified('emailNotifications');
+      await createLog(req.user, 'UPDATE_EMAIL_SETTINGS', 'Email Notifications', `Updated: ${Object.entries(emailNotifications).map(([k,v]) => `${k}=${v}`).join(', ')}`);
+    }
+
+    await settings.save();
+
+    res.json({
+      success: true,
+      message: 'SYSTEM_SETTINGS_UPDATED',
+      maintenanceMode: settings.maintenanceMode,
+      emailNotifications: settings.emailNotifications
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 3. التقارير المالية
+exports.getFinancialReports = async (req, res, next) => {
+  try {
+    const endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 6);
+    startDate.setHours(0, 0, 0, 0);
+
+    const buildLast7Days = (docs) => {
+      const byDay = new Map(docs.map(item => [item._id, item.revenue]));
+      const days = [];
+      const formatKey = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+        const key = formatKey(d);
+        days.push({ name: key, revenue: byDay.get(key) || 0 });
+      }
+      return days;
+    };
+
+    const totalRevenueStats = await Order.aggregate([
+      { $match: { status: 'completed' } },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+    ]);
+
+    const transactions = await Order.find()
+      .populate('user', 'name')
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    const chartData = await Order.aggregate([
+      { $match: { status: 'completed', createdAt: { $gte: startDate, $lte: endDate } } },
+      { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, revenue: { $sum: "$totalAmount" } } },
+      { $sort: { "_id": 1 } },
+    ]);
+
+    res.json({
+      success: true,
+      totalRevenue: totalRevenueStats[0]?.total || 0,
+      netProfit: (totalRevenueStats[0]?.total || 0) * 0.90,
+      avgOrderValue: (totalRevenueStats[0]?.total || 0) / (transactions.length || 1),
+      transactions,
+      chartData: buildLast7Days(chartData)
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 4. إدارة المستخدمين
+exports.getUsers = async (req, res, next) => {
+  try {
+    const users = await User.aggregate([
+      { $match: { role: { $ne: 'hidden' } } },
+      { $lookup: { from: 'orders', localField: '_id', foreignField: 'user', as: 'orderHistory' } },
+      {
+        $project: {
+          name: 1, email: 1, role: 1, isActive: 1, permissions: 1,
+          orderHistory: {
+            $map: {
+              input: '$orderHistory',
+              as: 'order',
+              in: { _id: '$$order._id', totalAmount: '$$order.totalAmount', createdAt: '$$order.createdAt', items: '$$order.items' }
+            }
+          },
+          totalSpent: { $sum: '$orderHistory.totalAmount' },
+          orderCount: { $size: '$orderHistory' }
+        }
+      },
+      { $sort: { name: 1 } }
+    ]);
+
+    res.json({ success: true, users });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 5. تحديث رتبة المستخدم
+exports.updateUserRole = async (req, res, next) => {
+  try {
+    const { role, permissions } = req.body;
+    const userToUpdate = await User.findById(req.params.id);
+
+    if (!userToUpdate) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const isSuper = req.user.role === 'owner' || req.user.role === 'hidden';
+    if ((userToUpdate.role === 'owner' || userToUpdate.role === 'hidden') && !isSuper) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const oldRole = userToUpdate.role;
+    if (role) userToUpdate.role = role;
+    if (permissions && Array.isArray(permissions)) userToUpdate.permissions = permissions;
+
+    await userToUpdate.save();
+    await createLog(req.user, 'UPDATE_ROLE', `${userToUpdate.name} (${userToUpdate.email})`, role ? `Role changed: ${oldRole} → ${role}` : 'Permissions updated');
+
+    res.json({ success: true, user: userToUpdate });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 6. تفعيل/تعطيل الحساب
+exports.toggleUserStatus = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (user.role === 'owner') return res.status(403).json({ success: false, message: 'Cannot deactivate owner' });
+
+    user.isActive = !user.isActive;
+    await user.save();
+    await createLog(req.user, 'TOGGLE_STATUS', `${user.name} (${user.email})`, `Account ${user.isActive ? 'activated' : 'deactivated'}`);
+
+    res.json({ success: true, user, message: `STATUS_CHANGED_TO_${user.isActive}` });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 7. وضع الصيانة
+exports.toggleMaintenanceMode = async (req, res, next) => {
+  try {
+    const canManage = req.user.role === 'owner' || req.user.role === 'hidden' || req.user.permissions.includes('manage_maintenance');
+    if (!canManage) return res.status(403).json({ success: false, message: 'FORBIDDEN' });
 
     const { status } = req.body;
+    let settings = await Settings.findOne();
+    if (!settings) settings = new Settings();
+    settings.maintenanceMode = status;
+    await settings.save();
+    await createLog(req.user, status ? 'MAINTENANCE_ON' : 'MAINTENANCE_OFF', 'System Settings', 'Maintenance mode toggled via system endpoint');
 
-    const order = await Order.findById(req.params.id).populate('user', 'name email');
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
-    }
-
-    // If admin marks as completed, run full fulfillment to attach codes
-    if (status === 'completed') {
-      if (order.status === 'completed') {
-        return res.json({ success: true, order });
-      }
-      if (!['paid_unconfirmed', 'failed'].includes(order.status)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Order not ready for completion'
-        });
-      }
-
-      const fulfilled = await exports.fulfillOrder(order._id);
-      
-      // Send email confirmation
-      emailService
-        .sendOrderConfirmation(fulfilled.user, fulfilled)
-        .catch(console.error);
-
-      // Create notification for the user that codes are ready
-      try {
-        const codesCount = fulfilled.items.reduce((sum, item) => sum + item.quantity, 0);
-        console.log(`📢 Creating notification for user ID: ${fulfilled.user._id}`);
-        console.log(`   Order: ${fulfilled.orderNumber}, Codes: ${codesCount}`);
-        
-        const notification = await NotificationService.createNotification(fulfilled.user._id, {
-          type: 'codes_ready',
-          title: '🎉 Your Codes Are Ready!',
-          message: `Your order ${fulfilled.orderNumber} has been confirmed. ${codesCount} code(s) are now available for download.`,
-          metadata: {
-            orderId: fulfilled._id,
-            orderNumber: fulfilled.orderNumber,
-            codesCount: codesCount,
-            amount: fulfilled.totalAmount
-          },
-          actionUrl: `/orders/${fulfilled._id}`
-        });
-        
-        console.log(`✅ Notification created successfully: ${notification._id}`);
-      } catch (notifErr) {
-        console.error(`❌ Failed to create notification:`, notifErr.message);
-        console.error(notifErr);
-      }
-
-      return res.json({ success: true, order: fulfilled });
-    }
-
-    order.status = status;
-    await order.save();
-
-    res.json({ success: true, order });
-
+    res.json({ success: true, maintenanceMode: settings.maintenanceMode });
   } catch (err) {
     next(err);
   }
 };
 
-
-
-// ✅ ده اللي الأدمن هيستخدمه
-exports.confirmAndSend = async (req, res, next) => {
+// 8. جلب سجلات النظام
+exports.getSystemLogs = async (req, res) => {
   try {
-    const { deliveryMode = 'database', deliveredCode } = req.body;
-
-    let order = await Order.findById(req.params.id)
-      .populate('items.product', 'name image category platform')
-      .populate('items.codes', 'code')
-      .populate('user', 'name email');
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
-    }
-
-    if (order.status === 'completed') {
-      return res.status(400).json({
-        success: false,
-        message: 'Order already confirmed'
-      });
-    }
-
-    if (!['paid_unconfirmed', 'failed'].includes(order.status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Order not ready for confirmation'
-      });
-    }
-
-    // ✅ اعمل Fulfillment الأول إذا كان delivery mode database
-    if (deliveryMode === 'database') {
-      order = await exports.fulfillOrder(order._id);
-    } else if (deliveryMode === 'manual') {
-      // Manual delivery - create a DigitalCode instance to satisfy the ObjectId references and track the code
-      if (!deliveredCode || !deliveredCode.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Code is required for manual delivery'
-        });
-      }
-
-      const session = await Order.startSession();
-      session.startTransaction();
-
-      try {
-        for (const item of order.items) {
-          // Create the DigitalCode for this manual entry
-          const newCode = new DigitalCode({
-            product: item.product._id || item.product,
-            code: deliveredCode,
-            isUsed: true,
-            usedBy: order.user._id || order.user,
-            usedAt: new Date(),
-            order: order._id,
-            addedBy: req.user._id,
-            notes: 'Manual delivery via Admin Dashboard'
-          });
-          
-          await newCode.save({ session });
-
-          item.codes = [newCode._id];
-          item.name = item.product.name;
-          item.image = item.product.image;
-        }
-
-        order.status = 'completed';
-        await order.save({ session });
-
-        await User.findByIdAndUpdate(
-          order.user._id,
-          { $addToSet: { orders: order._id } },
-          { session }
-        );
-
-        await session.commitTransaction();
-      } catch (err) {
-        await session.abortTransaction();
-        throw err;
-      } finally {
-        session.endSession();
-      }
-
-      // ✅ Repopulate order to guarantee emailService gets the actual string {code: '...'} instead of ObjectId
-      order = await Order.findById(order._id)
-        .populate('user', 'name email')
-        .populate('items.product', 'name image')
-        .populate('items.codes', 'code');
-    }
-
-    // ✅ ابعت الإيميل
-    emailService
-      .sendOrderConfirmation(order.user, order)
-      .catch(console.error);
-
-    // ✅ ابعت إشعار للعميل
-    try {
-      const codesCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
-      await NotificationService.createNotification(order.user._id, {
-        type: 'codes_ready',
-        title: '🎉 Your Codes Are Ready!',
-        message: `Order #${order.orderNumber} confirmed. ${codesCount} code(s) available now.`,
-        metadata: { orderId: order._id, orderNumber: order.orderNumber, codesCount, amount: order.totalAmount },
-        actionUrl: `/orders/${order._id}`
-      });
-    } catch (notifErr) {
-      console.error('Notification failed:', notifErr.message);
-    }
-
-    // ✅ سجّل العملية في الـ Logs
-    await createLog(
-      req.user,
-      'CONFIRM_ORDER',
-      `Order #${order.orderNumber} — ${order.user?.name || 'Unknown'}`,
-      `Delivered via ${deliveryMode} — $${order.totalAmount?.toFixed(2)}`
-    );
-
-    res.json({
-      success: true,
-      message: 'Codes sent to customer successfully!',
-      order,
-      deliveryMode
-    });
-
+    const logs = await Log.find().sort({ createdAt: -1 }).limit(50);
+    res.status(200).json({ success: true, logs });
   } catch (err) {
-    next(err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
