@@ -125,7 +125,7 @@ exports.confirmPayment = async (req, res, next) => {
     }
 
     // لو الأوردر خلاص في الحالة الصحيحة
-    if (order.status === 'paid_unconfirmed' || order.status === 'failed' || order.status === 'completed') {
+    if (['paid_unconfirmed', 'pending', 'processing', 'failed', 'completed'].includes(order.status)) {
       return res.json({
         success: true,
         order,
@@ -134,7 +134,7 @@ exports.confirmPayment = async (req, res, next) => {
     }
 
     // لو كان في حالة تانية
-    if (!['paid_unconfirmed', 'failed'].includes(order.status)) {
+    if (!['paid_unconfirmed', 'pending', 'processing', 'failed'].includes(order.status)) {
       return res.status(400).json({ success: false, message: 'Order not ready for confirmation' });
     }
 
