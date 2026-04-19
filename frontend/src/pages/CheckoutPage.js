@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { paymentAPI } from '../services/api';
+import API from '../services/api';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
 import { getImageUrl } from '../utils/imageUrl';
@@ -193,7 +194,67 @@ const STYLES = `
     font-size: 11px;
     color: #4a5a3a;
   }
+
+  /* ── Responsive ── */
+  .co-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 28px;
+    align-items: start;
+  }
+  .co-summary {
+    position: sticky;
+    top: 96px;
+  }
+  @media (max-width: 768px) {
+    .co-root {
+      padding-top: 70px !important;
+      padding-bottom: 40px !important;
+    }
+    .co-layout {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    .co-summary {
+      position: static;
+      order: -1;
+    }
+    .co-glass {
+      padding: 18px 16px !important;
+    }
+    .method-card {
+      padding: 14px 16px;
+    }
+    .coming-soon-badge {
+      right: -28px;
+      font-size: 8px;
+      padding: 3px 36px;
+    }
+    .security-badge {
+      font-size: 10px;
+    }
+  }
+  @media (max-width: 480px) {
+    .co-root {
+      padding-top: 64px !important;
+    }
+    .pay-btn {
+      font-size: 14px;
+      padding: 13px;
+    }
+    .card-row {
+      flex-direction: column;
+    }
+    .card-row-divider {
+      width: 100%;
+      height: 1px;
+    }
+  }
 `;
+
+const discountAPI = {
+  validate: (data) => API.post('/discounts/validate', data),
+};
 
 // ── Stripe Card Form ─────────────────────────────
 function StripeForm({ onSubmit, loading, total }) {
@@ -365,6 +426,28 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Discount code state
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountData, setDiscountData] = useState(null); // { discountAmount, finalAmount, discount }
+  const [discountLoading, setDiscountLoading] = useState(false);
+
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) return toast.error('Please enter a discount code');
+    setDiscountLoading(true);
+    try {
+      const res = await discountAPI.validate({ code: discountCode, totalAmount: total });
+      setDiscountData(res.data);
+      toast.success(`✅ Code applied! You save $${res.data.discountAmount.toFixed(2)}`);
+    } catch (err) {
+      setDiscountData(null);
+      toast.error(err.response?.data?.message || 'Invalid discount code');
+    } finally {
+      setDiscountLoading(false);
+    }
+  };
+
+  const finalTotal = discountData ? discountData.finalAmount : total;
+
   // نتحقق بس إن الكارت مش فاضي ونقفل الـ initLoading
   useEffect(() => {
     if (isEmpty) {
@@ -388,6 +471,7 @@ export default function CheckoutPage() {
           quantity: i.quantity,
         })),
         method: selectedMethod,
+        discountCode: discountData ? discountCode : undefined,
       });
 
       const newOrderId = intentRes.data.orderId;
@@ -461,7 +545,7 @@ export default function CheckoutPage() {
             fontSize:32, color:'#e8f0e0', margin:0 }}>Checkout</h1>
         </div>
 
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 340px', gap:28, alignItems:'start' }}>
+        <div className="co-layout">
 
           {/* LEFT — Payment */}
           <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
@@ -559,7 +643,7 @@ export default function CheckoutPage() {
               <PayPalForm
                 onSubmit={handlePayPalSubmit}
                 loading={loading || isSubmitting}
-                total={total}
+                total={finalTotal}
               />
             </div>
 
@@ -578,7 +662,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* RIGHT — Order Summary */}
-          <div className="co-glass" style={{ padding:'24px', position:'sticky', top:96 }}>
+          <div className="co-glass co-summary" style={{ padding:'24px' }}>
             <h2 style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:800,
               fontSize:18, color:'#e8f0e0', marginBottom:20 }}>
               Order Summary
@@ -625,11 +709,61 @@ export default function CheckoutPage() {
 
             <div style={{ height:1, background:'#2a3420', margin:'16px 0' }} />
 
+            {/* Discount Code Input */}
+            <div style={{ marginBottom:14 }}>
+              <div style={{ display:'flex', gap:8 }}>
+                <input
+                  value={discountCode}
+                  onChange={e => { setDiscountCode(e.target.value.toUpperCase()); setDiscountData(null); }}
+                  placeholder="Discount code"
+                  disabled={!!discountData}
+                  style={{
+                    flex:1, background:'#1a1f14', border:`1px solid ${discountData ? 'rgba(34,197,94,0.4)' : '#2a3420'}`,
+                    borderRadius:10, padding:'10px 12px', color:'#e8f0e0',
+                    fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none',
+                    fontWeight:600, letterSpacing:'.05em',
+                  }}
+                />
+                {discountData ? (
+                  <button
+                    onClick={() => { setDiscountData(null); setDiscountCode(''); }}
+                    style={{
+                      background:'rgba(248,113,113,0.1)', border:'1px solid rgba(248,113,113,0.3)',
+                      borderRadius:10, padding:'10px 14px', color:'#f87171',
+                      fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap',
+                    }}
+                  >Remove</button>
+                ) : (
+                  <button
+                    onClick={handleApplyDiscount}
+                    disabled={discountLoading || !discountCode.trim()}
+                    style={{
+                      background:'#567245', border:'none', borderRadius:10,
+                      padding:'10px 16px', color:'white',
+                      fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap',
+                      opacity: discountLoading || !discountCode.trim() ? 0.5 : 1,
+                    }}
+                  >{discountLoading ? '...' : 'Apply'}</button>
+                )}
+              </div>
+              {discountData && (
+                <p style={{ fontSize:11, color:'#22c55e', margin:'6px 0 0', fontWeight:600 }}>
+                  ✅ {discountData.discount.description || discountData.discount.code} applied
+                </p>
+              )}
+            </div>
+
             <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
               <div style={{ display:'flex', justifyContent:'space-between' }}>
                 <span style={{ fontSize:13, color:'#4a5a3a' }}>Subtotal</span>
                 <span style={{ fontSize:13, color:'#e8f0e0' }}>${total.toFixed(2)}</span>
               </div>
+              {discountData && (
+                <div style={{ display:'flex', justifyContent:'space-between' }}>
+                  <span style={{ fontSize:13, color:'#22c55e' }}>Discount</span>
+                  <span style={{ fontSize:13, color:'#22c55e', fontWeight:700 }}>-${discountData.discountAmount.toFixed(2)}</span>
+                </div>
+              )}
               <div style={{ display:'flex', justifyContent:'space-between' }}>
                 <span style={{ fontSize:13, color:'#4a5a3a' }}>Tax</span>
                 <span style={{ fontSize:13, color:'#22c55e' }}>$0.00</span>
@@ -641,8 +775,16 @@ export default function CheckoutPage() {
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
               <span style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:700,
                 fontSize:16, color:'#e8f0e0' }}>Total</span>
-              <span style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:800,
-                fontSize:28, color:'#e8f0e0' }}>${total.toFixed(2)}</span>
+              <div style={{ textAlign:'right' }}>
+                {discountData && (
+                  <p style={{ fontSize:12, color:'#4a5a3a', margin:'0 0 2px',
+                    textDecoration:'line-through' }}>${total.toFixed(2)}</p>
+                )}
+                <span style={{ fontFamily:'Rajdhani,sans-serif', fontWeight:800,
+                  fontSize:28, color: discountData ? '#22c55e' : '#e8f0e0' }}>
+                  ${finalTotal.toFixed(2)}
+                </span>
+              </div>
             </div>
 
             <div style={{

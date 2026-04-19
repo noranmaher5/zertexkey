@@ -63,6 +63,7 @@ app.use('/api/cart',     require('./routes/cartRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/admin',    require('./routes/adminRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/discounts', require('./routes/discountRoutes'));
 
 
 

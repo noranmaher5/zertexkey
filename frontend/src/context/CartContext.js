@@ -30,23 +30,42 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  const addItem = useCallback(async (product, quantity = 1) => {
-    if (!isAuthenticated) {
-      toast.error('Please login to add items to cart');
-      return;
-    }
-    if (!product?.isUnlimited && !Number(product?.stock || 0)) {
+const addItem = useCallback(async (product, quantity = 1) => {
+  if (!isAuthenticated) {
+    toast.error('Please login to add items to cart');
+    return false;
+  }
+
+  // التحقق من المخزون
+  if (!product?.isUnlimited) {
+    const stock = Number(product?.stock || 0);
+    if (stock <= 0) {
       toast.error('Product is out of stock');
-      return;
+      return false;
     }
-    try {
-      const res = await cartAPI.addItem(product._id, quantity);
-      setItems(res.data.cart.items || []);
-      toast.success(`${product.name} added to cart`);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to add item');
-    }
-  }, [isAuthenticated]);
+  }
+
+  try {
+    // إرسال الطلب للباك اند بالكمية المطلوبة مرة واحدة
+    const res = await cartAPI.addItem(product._id, quantity);
+    setItems(res.data.cart.items || []);
+
+    // التوست الاحترافي: نستخدم toast.success مع id ثابت
+    // هذا يمنع التكرار المزعج ويحدث الرسالة في مكانها
+    toast.success(
+      `Added ${quantity > 1 ? quantity + 'x ' : ''}${product.name} to cart`,
+      {
+        id: 'cart-toast', // ID ثابت يمنع ظهور أكثر من توست في نفس الوقت
+        duration: 2000,
+      }
+    );
+    
+    return true;
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Failed to add item', { id: 'cart-toast' });
+    return false;
+  }
+}, [isAuthenticated, items]);
 
   const removeItem = useCallback(async (productId) => {
     const id = productId?._id || productId; // ✅

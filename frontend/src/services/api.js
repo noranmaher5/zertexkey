@@ -175,6 +175,10 @@ export const adminAPI = {
 
   getLogs: () => API.get('/admin/logs'),
 };
+
+export const discountAPI = {
+  validate: (data) => API.post('/discounts/validate', data),
+};
 // ─────────────────────────────────────────────────────────────────────────────
 // CART API (عربة التسوق - قاعدة البيانات)
 // ─────────────────────────────────────────────────────────────────────────────

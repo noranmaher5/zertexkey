@@ -1,4 +1,5 @@
 const Order       = require('../models/Order');
+const DiscountCode = require('../models/DiscountCode');
 const Product     = require('../models/Product');
 const DigitalCode = require('../models/DigitalCode');
 const crypto      = require('crypto');
@@ -12,7 +13,7 @@ exports.getConfig = async (req, res) => {
 // ── Create Payment Intent (ينشئ الأوردر مباشرة بـ paid_unconfirmed) ──
 exports.createPaymentIntent = async (req, res, next) => {
   try {
-    const { items, method } = req.body;
+    const { items, method, discountCode } = req.body;
 
     if (!items || !items.length) {
       return res.status(400).json({ success: false, message: 'No items provided' });
@@ -51,7 +52,30 @@ exports.createPaymentIntent = async (req, res, next) => {
       });
     }
 
-    const finalAmount = Math.round(totalAmount * 100) / 100;
+    let finalAmount = Math.round(totalAmount * 100) / 100;
+    let appliedDiscount = null;
+
+    // تطبيق كود الخصم لو موجود
+    if (discountCode) {
+      const discount = await DiscountCode.findOne({ code: discountCode.toUpperCase(), isActive: true });
+      if (discount) {
+        const userUsageCount = discount.usedBy.filter(u => u.user.toString() === req.user.id).length;
+        const notMaxed = discount.maxUses === 0 || discount.usedCount < discount.maxUses;
+        const notExpired = !discount.expiresAt || new Date() < discount.expiresAt;
+        const userNotMaxed = userUsageCount < discount.maxUsesPerUser;
+
+        if (notMaxed && notExpired && userNotMaxed) {
+          let discountAmount = 0;
+          if (discount.type === 'percentage') {
+            discountAmount = (finalAmount * discount.value) / 100;
+          } else {
+            discountAmount = Math.min(discount.value, finalAmount);
+          }
+          finalAmount = Math.max(0, Math.round((finalAmount - discountAmount) * 100) / 100);
+          appliedDiscount = { id: discount._id, amount: discountAmount };
+        }
+      }
+    }
 
     // Idempotency: avoid duplicate orders for same cart within a short window
     const signature = orderItems
@@ -89,10 +113,25 @@ exports.createPaymentIntent = async (req, res, next) => {
       user: req.user.id,
       items: orderItems,
       totalAmount: finalAmount,
-      status: 'paid_unconfirmed',   // was pending
+      status: 'paid_unconfirmed',
       paymentMethod,
       checkoutHash
     });
+
+    // سجّل استخدام كود الخصم
+    if (appliedDiscount) {
+      await DiscountCode.findByIdAndUpdate(appliedDiscount.id, {
+        $inc: { usedCount: 1 },
+        $push: {
+          usedBy: {
+            user: req.user.id,
+            order: order._id,
+            usedAt: new Date(),
+            discountAmount: appliedDiscount.amount,
+          }
+        }
+      });
+    }
 
     res.json({
       success: true,
@@ -124,22 +163,29 @@ exports.confirmPayment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // لو الأوردر خلاص في الحالة الصحيحة
-    if (['paid_unconfirmed', 'pending', 'processing', 'failed', 'completed'].includes(order.status)) {
-      return res.json({
-        success: true,
-        order,
-        alreadyProcessed: true
-      });
+    // لو الأوردر خلاص مكتمل، مش هنعمل حاجة
+    if (order.status === 'completed') {
+       return res.json({ success: true, order, alreadyProcessed: true });
     }
 
-    // لو كان في حالة تانية
-    if (!['paid_unconfirmed', 'pending', 'processing', 'failed'].includes(order.status)) {
-      return res.status(400).json({ success: false, message: 'Order not ready for confirmation' });
-    }
-
+    // تحديث حالة الأوردر
     order.status = 'completed';
     await order.save();
+
+    // ✨ الجزء الجديد: إنشاء إشعار لليوزر
+    try {
+      await Notification.create({
+        user: req.user.id,
+        type: 'codes_ready', // النوع اللي إنت معرفه في الـ Schema
+        title: 'Order Confirmed! 🎉',
+        message: `Your order #${order._id.toString().slice(-6)} has been completed successfully. Check your items now!`,
+        actionUrl: `/orders/${order._id}`, // لينك يودي اليوزر لصفحة الأوردر
+        metadata: { orderId: order._id }
+      });
+    } catch (err) {
+      console.error('❌ Failed to create notification:', err);
+      // مش هنعمل throw عشان عملية الدفع نفسها متوقفش لو الإشعار فشل
+    }
 
     res.json({
       success: true,
@@ -154,5 +200,3 @@ exports.confirmPayment = async (req, res, next) => {
 exports.stripeWebhook = async (req, res) => {
   res.json({ received: true });
 };
-
-

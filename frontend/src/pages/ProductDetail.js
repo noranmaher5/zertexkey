@@ -7,13 +7,12 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import userDefaultAvatar from '../assets/user.png';
 
-// دالة لتحويل روابط يوتيوب العادية إلى روابط Embed
 const getEmbedUrl = (url) => {
   if (!url) return null;
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
-  return (match && match[2].length === 11) 
-    ? `https://www.youtube.com/embed/${match[2]}` 
+  return (match && match[2].length === 11)
+    ? `https://www.youtube.com/embed/${match[2]}`
     : null;
 };
 
@@ -25,225 +24,83 @@ const API_ORIGIN =
 const StarRating = ({ value = 0, size = 14, color = '#fbbf24' }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
     {[1, 2, 3, 4, 5].map((star) => (
-      <span
-        key={star}
-        style={{
-          fontSize: size,
-          lineHeight: 1,
-          color: star <= Math.round(value) ? color : 'rgba(255,255,255,0.18)'
-        }}
-      >
-        ★
-      </span>
+      <span key={star} style={{ fontSize: size, lineHeight: 1, color: star <= Math.round(value) ? color : 'rgba(255,255,255,0.18)' }}>★</span>
     ))}
   </div>
 );
 
+const TrashIcon = () => (
+  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+
 const categoryLabels = {
-  'roblox': 'Roblox',
-  'minecraft': 'Minecraft',
-  'steam': 'Steam',
-  'discord': 'Discord',
-  'chatgpt': 'ChatGPT',
-  'movies': 'Streaming',
-  'gift-cards': 'Gift Card',
-  'ebooks': 'eBook',
-  'games': 'Games',
-  'general': 'General'
+  'roblox': 'Roblox', 'minecraft': 'Minecraft', 'steam': 'Steam',
+  'discord': 'Discord', 'chatgpt': 'ChatGPT', 'movies': 'Streaming',
+  'gift-cards': 'Gift Card', 'ebooks': 'eBook', 'games': 'Games', 'general': 'General'
 };
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
-
-  .pd-root {
-    background: #182512;
-    min-height: 100vh;
-    font-family: 'Outfit', sans-serif;
-    color: #e8f0e0;
-  }
-  .pd-glass {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 18px;
-  }
-  .pd-page-shell {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
-  .pd-main-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 50px;
-  }
-  .pd-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-  }
-  .pd-btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: #22c55e;
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    padding: 13px 28px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all .2s;
-    text-decoration: none;
-  }
+  .pd-root { background: #182512; min-height: 100vh; font-family: 'Outfit', sans-serif; color: #e8f0e0; }
+  .pd-glass { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; }
+  .pd-page-shell { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  .pd-main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
+  .pd-badge { display: inline-flex; align-items: center; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .pd-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #22c55e; color: #fff; border: none; border-radius: 12px; padding: 13px 28px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s; text-decoration: none; }
   .pd-btn-primary:hover { background: #16a34a; transform: translateY(-1px); }
-  .pd-qty-btn {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    color: rgba(255,255,255,0.5);
-    font-size: 20px;
-    cursor: pointer;
-  }
-  .pd-thumb-btn {
-    flex-shrink: 0;
-    width: 64px;
-    height: 64px;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 2px solid transparent;
-    cursor: pointer;
-    background: none;
-    padding: 0;
-  }
+  .pd-qty-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: rgba(255,255,255,0.5); font-size: 20px; cursor: pointer; }
+  .pd-thumb-btn { flex-shrink: 0; width: 64px; height: 64px; border-radius: 10px; overflow: hidden; border: 2px solid transparent; cursor: pointer; background: none; padding: 0; }
   .pd-thumb-btn.active { border-color: #22c55e; }
-  .pd-review-item {
-    display: flex;
-    gap: 14px;
-    padding: 16px;
-    background: rgba(255,255,255,0.03);
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.05);
-    position: relative;
-  }
-  .pd-avatar {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #22c55e, #15803d);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-weight: 700;
-  }
+  .pd-review-item { display: flex; gap: 14px; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); position: relative; }
+  .pd-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #22c55e, #15803d); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; }
 
-  /* تصميم قائمة الثلاث نقاط */
   .pd-review-dots-btn {
-    background: none;
-    border: none;
-    color: rgba(255,255,255,0.3);
-    cursor: pointer;
-    font-size: 20px;
-    padding: 0 5px;
-    line-height: 1;
-    transition: color 0.2s;
+    background: none; border: none; cursor: pointer; padding: 4px 6px;
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.25); transition: all 0.2s;
   }
-  .pd-review-dots-btn:hover { color: #fff; }
-  
+  .pd-review-dots-btn:hover { background: rgba(248,113,113,0.1); color: #f87171; }
+
   .pd-review-menu {
-    position: absolute;
-    right: 15px;
-    top: 40px;
-    background: #1a1a1a;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
-    z-index: 50;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    min-width: 120px;
+    position: absolute; right: 12px; top: 38px;
+    background: #111; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; z-index: 50; overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6); min-width: 150px;
   }
   .pd-review-menu-item {
-    width: 100%;
-    padding: 10px 15px;
-    border: none;
-    background: none;
-    color: #f87171;
-    font-size: 12px;
-    font-weight: 700;
-    text-align: left;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    width: 100%; padding: 10px 14px; border: none; background: none;
+    color: #f87171; font-size: 12px; font-weight: 600; text-align: left;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: background 0.15s;
   }
-  .pd-review-menu-item:hover { background: rgba(248, 113, 113, 0.1); }
+  .pd-review-menu-item:hover { background: rgba(248,113,113,0.12); }
 
-  /* SwAl Popup Styles */
-  .swal2-popup.pd-swal-custom {
-    border: 1px solid rgba(34, 197, 94, 0.3) !important;
-    border-radius: 24px !important;
-    padding: 20px !important;
-  }
-  .pd-info-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 15px;
-    text-align: left;
-  }
-  .pd-info-video-container {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%;
-    border-radius: 15px;
-    overflow: hidden;
-    background: #000;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    margin-top: 10px;
-  }
-  .pd-info-video-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-  }
+  .swal2-popup.pd-swal-custom { border: 1px solid rgba(34,197,94,0.3) !important; border-radius: 24px !important; padding: 20px !important; }
+  .pd-info-grid { display: grid; grid-template-columns: 1fr; gap: 15px; text-align: left; }
+  .pd-info-video-container { position: relative; width: 100%; padding-top: 56.25%; border-radius: 15px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-top: 10px; }
+  .pd-info-video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
 
-  @media (max-width: 1024px) {
-    .pd-main-grid { gap: 36px; }
-    .pd-glass h1, .pd-price { word-break: break-word; }
-  }
-
+  @media (max-width: 1024px) { .pd-main-grid { gap: 36px; } }
   @media (max-width: 768px) {
     .pd-page-shell { padding: 0 16px; }
     .pd-main-grid { grid-template-columns: 1fr; gap: 24px; }
     .pd-root { padding-top: 72px !important; padding-bottom: 44px !important; }
     .pd-main-title { font-size: 30px !important; margin-top: 10px !important; }
     .pd-price { font-size: 38px !important; }
-    .pd-strike-price { font-size: 18px !important; }
     .pd-actions-row { flex-direction: column; gap: 12px !important; }
     .pd-qty-box, .pd-btn-primary, .pd-wishlist-btn { width: 100%; }
     .pd-qty-box { justify-content: center; }
     .pd-review-shell { margin-top: 36px !important; padding: 22px 18px !important; }
     .pd-review-header { font-size: 22px !important; margin-bottom: 20px !important; }
   }
-
   @media (max-width: 480px) {
     .pd-page-shell { padding: 0 12px; }
     .pd-root { padding-top: 66px !important; }
     .pd-main-image { aspect-ratio: 1 / 1; border-radius: 18px !important; }
     .pd-thumb-btn { width: 54px; height: 54px; }
     .pd-price { font-size: 32px !important; }
-    .pd-badge { font-size: 10px; padding: 3px 10px; }
     .pd-review-item { padding: 14px; }
   }
 `;
@@ -266,10 +123,7 @@ export default function ProductDetail() {
 
   useEffect(() => {
     productAPI.getOne(id)
-      .then(res => {
-        setProduct(res.data.product);
-        setLoading(false);
-      })
+      .then(res => { setProduct(res.data.product); setLoading(false); })
       .catch(() => setLoading(false));
   }, [id]);
 
@@ -281,17 +135,11 @@ export default function ProductDetail() {
 
   useEffect(() => {
     const loadWishlistState = async () => {
-      if (!isAuthenticated || !product?._id) {
-        setInWishlist(false);
-        return;
-      }
+      if (!isAuthenticated || !product?._id) { setInWishlist(false); return; }
       try {
         const res = await authAPI.getWishlist();
-        const exists = (res.data.wishlist || []).some(item => item._id === product._id);
-        setInWishlist(exists);
-      } catch {
-        setInWishlist(false);
-      }
+        setInWishlist((res.data.wishlist || []).some(item => item._id === product._id));
+      } catch { setInWishlist(false); }
     };
     loadWishlistState();
   }, [isAuthenticated, product?._id]);
@@ -302,14 +150,34 @@ export default function ProductDetail() {
     return `${API_ORIGIN}${img}`;
   };
 
-  const handleAddToCart = () => {
+const handleAddToCart = async () => {
     if (!product) return;
+    
     if (!product.isUnlimited && !product.availableStock) {
-      toast.error('Product is out of stock');
+      toast.error('Product is out of stock', { id: 'cart-status' });
       return;
     }
-    for (let i = 0; i < quantity; i++) addItem(product);
-    toast.success(`${quantity}x ${product.name} added to cart`);
+
+    const success = await addItem(product, quantity);
+    
+    if (success) {
+      // استخدام id: 'cart-success' يضمن تحديث التوست نفسه بدلاً من تكراره
+      toast.success(
+        `${quantity > 1 ? quantity + 'x ' : ''}${product.name} added to cart`, 
+        { 
+          id: 'cart-success', // هذا الـ ID يمنع الازدحام
+          duration: 2000,
+          icon: '🛒',
+          style: {
+            background: '#1a1a1a',
+            color: '#fff',
+            border: '1px solid #22c55e',
+            fontSize: '14px',
+            fontFamily: 'Outfit, sans-serif'
+          }
+        }
+      );
+    }
   };
 
   const handleToggleWishlist = async () => {
@@ -322,9 +190,7 @@ export default function ProductDetail() {
       toast.success(res.data.inWishlist ? 'Added to wishlist' : 'Removed from wishlist');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Wishlist update failed');
-    } finally {
-      setWishlistLoading(false);
-    }
+    } finally { setWishlistLoading(false); }
   };
 
   const handleReview = async (e) => {
@@ -339,54 +205,39 @@ export default function ProductDetail() {
       setReview({ rating: 5, comment: '' });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit review');
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   };
 
   const handleDeleteReview = async (reviewId) => {
     try {
       await productAPI.deleteReview(product._id, reviewId);
-      toast.success('Comment deleted');
-      setProduct(prev => ({
-        ...prev,
-        reviews: prev.reviews.filter(r => r._id !== reviewId)
-      }));
-    } catch (err) {
-      toast.error('Failed to delete review');
-    }
+      toast.success('Review deleted');
+      setProduct(prev => ({ ...prev, reviews: prev.reviews.filter(r => r._id !== reviewId) }));
+      setActiveMenu(null);
+    } catch { toast.error('Failed to delete review'); }
   };
 
   const handleInfoClick = () => {
     if (!product) return;
     const currentImageUrl = getImageUrl(images[activeImg]);
     const embedUrl = getEmbedUrl(product.youtubeUrl);
-
     Swal.fire({
       title: `<span style="font-family:'Rajdhani'; font-weight:800; color:#e8f0e0;">Product Details</span>`,
-      background: '#14210f',
-      showCloseButton: true,
-      showConfirmButton: false,
-      width: '700px',
-      customClass: { popup: 'pd-swal-custom' },
+      background: '#14210f', showCloseButton: true, showConfirmButton: false,
+      width: '700px', customClass: { popup: 'pd-swal-custom' },
       html: `
         <div class="pd-info-grid">
-          <div style="display: flex; gap: 20px; align-items: start;">
-             <img src="${currentImageUrl}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(34,197,94,0.3);" />
-             <div style="flex: 1;">
-                <h3 style="margin: 0 0 8px 0; color: #22c55e; font-family: 'Rajdhani'; font-size: 22px;">${product.name}</h3>
-                <div style="margin-bottom: 10px;">
-                  <span style="background:rgba(34,197,94,0.15); color:#22c55e; padding:3px 10px; border-radius:8px; font-size:11px; font-weight:700; text-transform: uppercase;">
-                    ${categoryLabels[product.category] || 'Category'}
-                  </span>
-                </div>
-                <p style="color:rgba(232,240,224,0.7); font-size:14px; line-height:1.5; margin:0;">${product.description}</p>
-             </div>
+          <div style="display:flex;gap:20px;align-items:start;">
+            <img src="${currentImageUrl}" style="width:150px;height:150px;object-fit:cover;border-radius:12px;border:1px solid rgba(34,197,94,0.3);" />
+            <div style="flex:1;">
+              <h3 style="margin:0 0 8px 0;color:#22c55e;font-family:'Rajdhani';font-size:22px;">${product.name}</h3>
+              <div style="margin-bottom:10px;"><span style="background:rgba(34,197,94,0.15);color:#22c55e;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;text-transform:uppercase;">${categoryLabels[product.category] || 'Category'}</span></div>
+              <p style="color:rgba(232,240,224,0.7);font-size:14px;line-height:1.5;margin:0;">${product.description}</p>
+            </div>
           </div>
-          ${product.extraInfo ? `<div style="background:rgba(34,197,94,0.05); padding:15px; border-radius:12px; border-left:4px solid #22c55e;"><p style="margin:0; font-size:13px; color:rgba(255,255,255,0.6); font-style: italic;">"${product.extraInfo}"</p></div>` : ''}
-          ${embedUrl ? `<div style="margin-top:15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;"><h4 style="margin:0 0 12px 0; font-size:16px; color:#e8f0e0; font-family:'Rajdhani'; letter-spacing: 1px;">VIDEO PREVIEW</h4><div class="pd-info-video-container"><iframe src="${embedUrl}?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe></div></div>` : ''}
-        </div>
-      `
+          ${product.extraInfo ? `<div style="background:rgba(34,197,94,0.05);padding:15px;border-radius:12px;border-left:4px solid #22c55e;"><p style="margin:0;font-size:13px;color:rgba(255,255,255,0.6);font-style:italic;">"${product.extraInfo}"</p></div>` : ''}
+          ${embedUrl ? `<div style="margin-top:15px;border-top:1px solid rgba(255,255,255,0.1);padding-top:15px;"><h4 style="margin:0 0 12px 0;font-size:16px;color:#e8f0e0;font-family:'Rajdhani';letter-spacing:1px;">VIDEO PREVIEW</h4><div class="pd-info-video-container"><iframe src="${embedUrl}?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe></div></div>` : ''}
+        </div>`
     });
   };
 
@@ -411,7 +262,7 @@ export default function ProductDetail() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
             <div className="pd-glass pd-main-image" style={{ position: 'relative', overflow: 'hidden', aspectRatio: '1', borderRadius: 24 }}>
               <img src={getImageUrl(images[activeImg])} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={product.name} />
-              <button onClick={handleInfoClick} title="View Video & Info" style={{ position: 'absolute', top: 15, right: 15, width: 42, height: 42, borderRadius: '50%', background: '#22c55e', color: '#fff', border: 'none', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize: '20px', fontWeight:'bold' }}>i</button>
+              <button onClick={handleInfoClick} title="View Video & Info" style={{ position: 'absolute', top: 15, right: 15, width: 42, height: 42, borderRadius: '50%', background: '#22c55e', color: '#fff', border: 'none', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold' }}>i</button>
             </div>
             <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 5 }}>
               {images.map((img, i) => (
@@ -434,9 +285,7 @@ export default function ProductDetail() {
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 15 }}>
                 <span className="pd-price" style={{ fontSize: 48, fontWeight: 800, color: '#22c55e' }}>${product.price.toFixed(2)}</span>
                 {product.originalPrice > product.price && (
-                  <span className="pd-strike-price" style={{ fontSize: 22, color: 'rgba(255,255,255,0.2)', textDecoration: 'line-through' }}>
-                    ${product.originalPrice.toFixed(2)}
-                  </span>
+                  <span className="pd-strike-price" style={{ fontSize: 22, color: 'rgba(255,255,255,0.2)', textDecoration: 'line-through' }}>${product.originalPrice.toFixed(2)}</span>
                 )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
@@ -482,7 +331,7 @@ export default function ProductDetail() {
                   ))}
                 </div>
               </div>
-              <textarea className="pd-input" rows="3" placeholder="Share your thoughts..." style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '15px', color: '#fff' }} value={review.comment} onChange={(e) => setReview({...review, comment: e.target.value})} />
+              <textarea className="pd-input" rows="3" placeholder="Share your thoughts..." style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '15px', color: '#fff' }} value={review.comment} onChange={(e) => setReview({ ...review, comment: e.target.value })} />
               <button type="submit" className="pd-btn-primary" style={{ width: 'fit-content' }}>{submitting ? 'Sending...' : 'Submit Review'}</button>
             </form>
           ) : (
@@ -502,16 +351,23 @@ export default function ProductDetail() {
 
                     {isAdmin && (
                       <div style={{ position: 'relative' }}>
-                        <button 
+                        <button
                           className="pd-review-dots-btn"
                           onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === r._id ? null : r._id); }}
+                          title="Review options"
                         >
-                          ⋮
+                          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
+                          </svg>
                         </button>
                         {activeMenu === r._id && (
                           <div className="pd-review-menu">
-                            <button onClick={() => handleDeleteReview(r._id)} className="pd-review-menu-item">
-                              🗑 Delete Review
+                            <button
+                              onClick={() => handleDeleteReview(r._id)}
+                              className="pd-review-menu-item"
+                            >
+                              <TrashIcon />
+                              Delete Review
                             </button>
                           </div>
                         )}

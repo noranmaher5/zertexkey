@@ -34,6 +34,8 @@ import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import MaintenancePage from './pages/MaintenancePage'; 
 import AdminFinancials from './pages/admin/AdminFinancials';
+import AdminDiscounts from './pages/admin/AdminDiscounts';
+
 
 // 🛡️ 1. جارد وضع الصيانة (Maintenance Guard)
 const MaintenanceGuard = () => {
@@ -206,6 +208,8 @@ function AppRoutes() {
                 <AdminSettings />
               </AdminRoute>
             } />
+            <Route path="/admin/discounts" element={<AdminRoute><AdminDiscounts /></AdminRoute>} />
+
 
             <Route path="/admin/maintenance" element={
               <AdminRoute permission="manage_maintenance">
