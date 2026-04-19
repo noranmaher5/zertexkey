@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
@@ -36,6 +36,84 @@ import MaintenancePage from './pages/MaintenancePage';
 import AdminFinancials from './pages/admin/AdminFinancials';
 import AdminDiscounts from './pages/admin/AdminDiscounts';
 
+
+// 💬 Chatwoot Widget (كل الصفحات ما عدا /admin)
+const ChatwootScript = () => {
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith('/admin');
+
+  useEffect(() => {
+    const styleId = 'chatwoot-hide-style';
+
+    if (isAdmin) {
+      // إخفاء كل عناصر Chatwoot عبر CSS
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.innerHTML = `
+          #chatwoot_live_chat_widget,
+          .woot-widget-bubble,
+          .woot-widget-holder { display: none !important; visibility: hidden !important; }
+        `;
+        document.head.appendChild(style);
+      }
+      return;
+    }
+
+    // إزالة الـ hide style لو رجع من الأدمن
+    const hideStyle = document.getElementById(styleId);
+    if (hideStyle) hideStyle.remove();
+
+    // امنع التكرار لو السكريبت موجود بالفعل
+    if (document.getElementById('chatwoot-sdk')) return;
+
+    const BASE_URL = 'https://app-bot.syriana.software';
+    const script = document.createElement('script');
+    script.id = 'chatwoot-sdk';
+    script.src = `${BASE_URL}/packs/js/sdk.js`;
+    script.async = true;
+    script.onload = () => {
+      window.chatwootSDK.run({
+        websiteToken: 'ahHbRPEmY3BmUtGyuGZqTAWo',
+        baseUrl: BASE_URL,
+      });
+      window.addEventListener('chatwoot:ready', () => {
+        const style = document.createElement('style');
+        style.innerHTML = `
+          #chatwoot_live_chat_widget { clip-path: inset(0px 0px 35px 0px) !important; bottom: -15px !important; }
+          .woot-widget-bubble--brand { display: none !important; visibility: hidden !important; }
+        `;
+        document.head.appendChild(style);
+
+        // نستنى الـ widget يتحمل كامل الأول
+        setTimeout(() => {
+          const interval = setInterval(() => {
+            try {
+              const widgetHolder = document.querySelector('.woot-widget-holder');
+              if (widgetHolder && !widgetHolder.querySelector('.clean-cover')) {
+                const cover = document.createElement('div');
+                cover.className = 'clean-cover';
+                cover.style.cssText = `
+                  position: absolute; bottom: 0; right: 0;
+                  width: 100%; height: 35px; background: #fff;
+                  z-index: 9999; pointer-events: none;
+                  border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;
+                `;
+                widgetHolder.appendChild(cover);
+                clearInterval(interval); // خلاص لقيناه، وقفنا الـ interval
+              }
+            } catch (e) {
+              // ignore
+            }
+          }, 1500);
+        }, 2000);
+      });
+    };
+    document.body.appendChild(script);
+  }, [isAdmin]);
+
+  return null;
+};
 
 // 🛡️ 1. جارد وضع الصيانة (Maintenance Guard)
 const MaintenanceGuard = () => {
@@ -145,6 +223,7 @@ const GuestRoute = ({ children }) => {
 function AppRoutes() {
   return (
     <div className="flex flex-col min-h-screen bg-[#050505] overflow-x-hidden">
+      <ChatwootScript />
       <Navbar />
       <main className="flex-1 min-w-0">
         <Routes>

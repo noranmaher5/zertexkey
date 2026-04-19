@@ -14,12 +14,14 @@ router.get('/users', ctrl.getUsers);
 // هذا السطر هو الذي كان ينقصك ويسبب خطأ 404 👇
 router.put('/users/:id/role', ctrl.updateUserRole); 
 router.put('/users/:id/toggle-status', ctrl.toggleUserStatus);
+router.put('/users/:id/password', ctrl.changeUserPassword);
 
 // 4. إعدادات النظام والتقارير
 router.put('/settings', ctrl.updateSettings);
 // داخل ملف adminRoutes.js
 router.get('/logs', ctrl.getSystemLogs); // تأكدي من إضافة هذا السطر
 router.get('/financials', ctrl.getFinancialReports);
+console.log('✅ adminRoutes loaded with password route');
 
 // 5. مسار وضع الصيانة (الذي برمجناه سوياً)
 router.put('/system/maintenance', ctrl.toggleMaintenanceMode);

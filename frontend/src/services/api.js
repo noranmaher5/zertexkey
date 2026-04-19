@@ -28,7 +28,9 @@ API.interceptors.response.use(
   (res) => res,
   (err) => {
     // إذا كان الخطأ 401 (غير مصرح) ولم يكن الطلب هو التحقق من المستخدم الحالي
-    if (err.response?.status === 401 && err.config?.url !== '/auth/me') {
+    if (err.response?.status === 401 && 
+        err.config?.url !== '/auth/me' && 
+        err.config?.url !== '/auth/login') {
       localStorage.removeItem('dv_token');
       localStorage.removeItem('dv_user');
       window.location.href = '/login';
@@ -169,6 +171,9 @@ export const adminAPI = {
 
   // تحديث إعدادات النظام (مثل وضع الصيانة)
   updateSettings: (data) => API.put('/admin/settings', data),
+
+  // تغيير باسورد مستخدم (أدمن فقط)
+  changeUserPassword: (id, data) => API.put(`/admin/users/${id}/password`, data),
 
   // جلب التقارير المالية المفصلة
   getFinancials: (params) => API.get('/admin/financials', { params }),

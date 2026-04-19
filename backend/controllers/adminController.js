@@ -271,7 +271,34 @@ exports.toggleMaintenanceMode = async (req, res, next) => {
   }
 };
 
-// 8. جلب سجلات النظام
+// 8. تغيير باسورد مستخدم
+exports.changeUserPassword = async (req, res, next) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6)
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+
+    const userToUpdate = await User.findById(req.params.id).select('+password');
+    if (!userToUpdate)
+      return res.status(404).json({ success: false, message: 'User not found' });
+
+    const isSuper = req.user.role === 'owner' || req.user.role === 'hidden';
+    if (userToUpdate.role === 'owner' && !isSuper)
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+
+    // سيب الـ pre('save') hook يعمل الـ hash
+    userToUpdate.password = newPassword;
+    await userToUpdate.save();
+
+    await createLog(req.user, 'CHANGE_PASSWORD', `${userToUpdate.name} (${userToUpdate.email})`, 'Password changed by admin');
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 9. جلب سجلات النظام
 exports.getSystemLogs = async (req, res) => {
   try {
     const logs = await Log.find().sort({ createdAt: -1 }).limit(50);

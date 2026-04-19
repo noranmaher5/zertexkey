@@ -27,7 +27,14 @@ export default function AdminUsers() {
   const [viewingActivity, setViewingActivity] = useState(null); 
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedPerms, setSelectedPerms] = useState([]);
-  const [expandedOrderId, setExpandedOrderId] = useState(null); // للتحكم في فتح الأوردر
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+  // Password Modal States
+  const [passwordTarget, setPasswordTarget] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -45,6 +52,26 @@ export default function AdminUsers() {
     setSelectedPerms(prev => 
       prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
     );
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword.length < 6)
+      return toast.error('Password must be at least 6 characters');
+    if (newPassword !== confirmPassword)
+      return toast.error('Passwords do not match');
+
+    setPasswordLoading(true);
+    try {
+      await adminAPI.changeUserPassword(passwordTarget._id, { newPassword });
+      toast.success('Password updated successfully');
+      setPasswordTarget(null);
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update password');
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   return (
@@ -100,6 +127,13 @@ export default function AdminUsers() {
                         className="text-xs font-semibold py-2.5 px-6 rounded-xl bg-zinc-800 text-white border border-white/10 hover:bg-white hover:text-black transition-all"
                       >
                         Activity
+                      </button>
+                      <button
+                        onClick={() => { setPasswordTarget(u); setNewPassword(''); setConfirmPassword(''); setShowPassword(false); }}
+                        className="text-xs font-semibold py-2.5 px-5 rounded-xl bg-zinc-800 text-zinc-400 border border-white/10 hover:bg-yellow-500/10 hover:text-yellow-400 hover:border-yellow-500/30 transition-all"
+                        title="Change Password"
+                      >
+                        🔑
                       </button>
                       <button 
                         onClick={() => { setEditTarget(u); setSelectedRole(u.role); setSelectedPerms(u.permissions || []); }}
@@ -263,6 +297,83 @@ export default function AdminUsers() {
                 <button 
                   onClick={() => setEditTarget(null)}
                   className="py-4 bg-zinc-900 text-zinc-600 rounded-xl font-semibold text-xs border border-white/5"
+                >Abort</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* --- PASSWORD MODAL: تغيير باسورد اليوزر --- */}
+      {passwordTarget && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl">
+          <div className="bg-[#0a0a0a] border border-white/10 w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-white border-l-4 border-yellow-500 pl-5">Change Password</h2>
+                <p className="text-xs text-zinc-500 mt-2 pl-5">Operator: <span className="text-yellow-400 font-semibold">{passwordTarget.name}</span></p>
+              </div>
+              <button
+                onClick={() => setPasswordTarget(null)}
+                className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+              >✕</button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-zinc-500 font-semibold mb-2 block uppercase tracking-widest">New Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="Min. 6 characters"
+                    className="w-full h-13 bg-zinc-900 border border-white/10 rounded-xl px-5 py-4 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500/50 transition-all pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors text-xs"
+                  >
+                    {showPassword ? '🙈' : '👁'}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-zinc-500 font-semibold mb-2 block uppercase tracking-widest">Confirm Password</label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat new password"
+                  className={`w-full h-13 bg-zinc-900 border rounded-xl px-5 py-4 text-sm text-white placeholder-zinc-600 focus:outline-none transition-all ${
+                    confirmPassword && confirmPassword !== newPassword
+                      ? 'border-red-500/50 focus:border-red-500'
+                      : confirmPassword && confirmPassword === newPassword
+                      ? 'border-green-500/50 focus:border-green-500'
+                      : 'border-white/10 focus:border-yellow-500/50'
+                  }`}
+                />
+                {confirmPassword && confirmPassword !== newPassword && (
+                  <p className="text-xs text-red-400 mt-1 pl-1">Passwords do not match</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                <button
+                  onClick={handleChangePassword}
+                  disabled={passwordLoading || !newPassword || newPassword !== confirmPassword}
+                  className="py-4 bg-yellow-500 text-black rounded-xl font-bold text-xs hover:bg-yellow-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {passwordLoading ? (
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  ) : (
+                    <> 🔑 Update Password</>
+                  )}
+                </button>
+                <button
+                  onClick={() => setPasswordTarget(null)}
+                  className="py-4 bg-zinc-900 text-zinc-600 rounded-xl font-semibold text-xs border border-white/5 hover:border-white/10 transition-all"
                 >Abort</button>
               </div>
             </div>

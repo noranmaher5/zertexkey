@@ -382,9 +382,7 @@ function SignInForm() {
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="block text-xs font-semibold text-[#b4c89e]">Password</label>
-          <Link to="/forgot-password" className="text-[11px] font-medium text-[#889679] hover:text-[#c4d6a1] transition-colors">
-            Forgot password?
-          </Link>
+          
         </div>
         <div className="relative">
           <input
@@ -451,6 +449,27 @@ function SignInForm() {
             Google Sign-In unavailable
           </button>
         )}
+      </div>
+
+      {/* Support Section */}
+      <div className="mt-2 p-4 bg-[#10140c] border border-[#232c1b] rounded-[12px]">
+        <p className="text-[11px] text-[#6e7d5e] text-center mb-3">
+          Can't access your account?{' '}
+          <button
+            type="button"
+            onClick={() => window.$chatwoot?.toggle('open')}
+            className="text-[#a5b287] hover:text-[#c4d6a1] font-semibold transition-colors"
+          >
+            Chat with support
+          </button>
+        </p>
+        <button
+          type="button"
+          onClick={() => window.$chatwoot?.toggle('open')}
+          className="w-full py-2.5 bg-[#161b11] border border-[#2a3420] text-[#889679] text-[12px] font-semibold rounded-[10px] hover:border-[#516441] hover:text-[#a5b287] transition-all flex items-center justify-center gap-2"
+        >
+          <span>💬</span> Need Help? Talk to Us
+        </button>
       </div>
     </form>
   );
