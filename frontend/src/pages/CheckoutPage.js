@@ -209,7 +209,6 @@ const STYLES = `
     justify-content: center;
   }
 
-  /* ── Responsive ── */
   .co-layout {
     display: grid;
     grid-template-columns: 1fr 340px;
@@ -270,30 +269,12 @@ const discountAPI = {
   validate: (data) => API.post('/discounts/validate', data),
 };
 
-// ── PayPal Form (Sandbox) ─────────────────────────────────────────────────────
-function PayPalForm({ pendingOrderId, setPendingOrderId, finalTotal, items, discountData, discountCode, onSuccess, onError }) {
-  if (!pendingOrderId) {
-    return (
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '32px', color: '#4a5a3a', fontSize: 13,
-        flexDirection: 'column', gap: 12,
-      }}>
-        <div style={{
-          width: 28, height: 28,
-          border: '3px solid #009cde', borderTopColor: 'transparent',
-          borderRadius: '50%', animation: 'spin .8s linear infinite',
-        }} />
-        Preparing your order...
-      </div>
-    );
-  }
-
+// ── PayPal Form ───────────────────────────────────────────────────────────────
+function PayPalForm({ finalTotal, items, discountData, discountCode, onSuccess, onError }) {
   return (
     <div className="fade-up">
       <div className="paypal-wrapper">
         <div className="paypal-info">
-          {/* PayPal Logo */}
           <svg width="100" height="26" viewBox="0 0 100 26" fill="none">
             <text x="0" y="20" fontFamily="Arial" fontWeight="800" fontSize="22" fill="#003087">Pay</text>
             <text x="36" y="20" fontFamily="Arial" fontWeight="800" fontSize="22" fill="#009cde">Pal</text>
@@ -308,51 +289,39 @@ function PayPalForm({ pendingOrderId, setPendingOrderId, finalTotal, items, disc
           </div>
         </div>
 
-        {/* PayPal Buttons الحقيقية */}
         <PayPalButtons
-          style={{
-            layout: 'vertical',
-            color: 'blue',
-            shape: 'rect',
-            label: 'pay',
-            height: 45,
-          }}
-          createOrder={async () => {
-            // 1. ننشئ الأوردر في الداتابيز أولاً
-            const intentRes = await paymentAPI.createPaymentIntent({
-              items: items.map(i => ({
-                productId: i.product?.toString() || i.productId,
-                quantity: i.quantity,
-              })),
-              method: 'paypal',
-              discountCode: discountData ? discountCode : undefined,
-            });
-            const newOrderId = intentRes.data.orderId;
-            setPendingOrderId(newOrderId);
+  style={{ layout: 'vertical', color: 'blue', shape: 'rect', label: 'pay', height: 45 }}
 
-            // 2. ننشئ PayPal order مرتبط بالأوردر
-            const res = await API.post('/payments/paypal/create', {
-              amount: finalTotal,
-              orderId: newOrderId,
-            });
-            return res.data.paypalOrderId;
-          }}
-          onApprove={async (data) => {
-            // بعد ما اليوزر يوافق في نافذة PayPal، نعمل capture
-            await API.post('/payments/paypal/capture', {
-              paypalOrderId: data.orderID,
-              orderId: data.custom_id || pendingOrderId,
-            });
-            onSuccess(data.custom_id || pendingOrderId);
-          }}
-          onError={(err) => {
-            console.error('PayPal error:', err);
-            onError('PayPal payment failed. Please try again.');
-          }}
-          onCancel={() => {
-            toast('Payment cancelled. Your order is saved, you can retry.');
-          }}
-        />
+  // بننشئ PayPal order بس — مش بنلمس الداتابيز
+  createOrder={async () => {
+    const res = await API.post('/payments/paypal/create', {
+      amount: finalTotal,
+    });
+    return res.data.paypalOrderId;
+  }}
+
+  // بعد الدفع — بنبعت الـ items ونعمل capture وننشئ الأوردر
+  onApprove={async (data) => {
+    const res = await API.post('/payments/paypal/capture', {
+      paypalOrderId: data.orderID,
+      items: items.map(i => ({
+        productId: i.product?.toString() || i.productId,
+        quantity: i.quantity,
+      })),
+      discountCode: discountData ? discountCode : undefined,
+    });
+    onSuccess(res.data.orderId);
+  }}
+
+  onError={(err) => {
+    console.error('PayPal error:', err);
+    onError('PayPal payment failed. Please try again.');
+  }}
+
+  onCancel={() => {
+    toast('Payment cancelled.');
+  }}
+/>
       </div>
     </div>
   );
@@ -364,15 +333,10 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
 
   const [method, setMethod] = useState('paypal');
-  const [loading, setLoading] = useState(false);
   const [initLoading, setInitLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // الـ order اللي اتنشأ مسبقاً عشان PayPal يشتغل
-  const [pendingOrderId, setPendingOrderId] = useState(null);
-  const [orderInitLoading, setOrderInitLoading] = useState(false);
-
-  // Discount code state
+  // Discount
   const [discountCode, setDiscountCode] = useState('');
   const [discountData, setDiscountData] = useState(null);
   const [discountLoading, setDiscountLoading] = useState(false);
@@ -394,9 +358,6 @@ export default function CheckoutPage() {
 
   const finalTotal = discountData ? discountData.finalAmount : total;
 
-  // ── لا ننشئ الأوردر إلا لما اليوزر يضغط PayPal فعلاً ──
-
-  // نتحقق بس إن الكارت مش فاضي
   useEffect(() => {
     if (isEmpty) {
       navigate('/cart');
@@ -405,14 +366,12 @@ export default function CheckoutPage() {
     setInitLoading(false);
   }, [isEmpty, navigate]);
 
-  // ── PayPal success handler ──
   const handlePayPalSuccess = (orderId) => {
     clearCart();
     toast.success('🎉 Payment successful! Your order is confirmed.');
     navigate(`/orders/${orderId}`);
   };
 
-  // ── PayPal error handler ──
   const handlePayPalError = (msg) => {
     toast.error(msg);
   };
@@ -444,12 +403,11 @@ export default function CheckoutPage() {
   );
 
   return (
-    // ✅ PayPalScriptProvider بيلف الصفحة كلها عشان الـ buttons يشتغلوا
-  <PayPalScriptProvider options={{
-  clientId: "AfwyY-1izJxJcCu3Uy_g5uagq1b2O1M8OH6ur4rOGdENDBsJSCWysHfNsGO-K5ivK-oD7awDlvt3u3N_",
-  currency: 'USD',
-  intent: 'capture',
-}}>
+    <PayPalScriptProvider options={{
+      clientId: "AfwyY-1izJxJcCu3Uy_g5uagq1b2O1M8OH6ur4rOGdENDBsJSCWysHfNsGO-K5ivK-oD7awDlvt3u3N_",
+      currency: 'USD',
+      intent: 'capture',
+    }}>
       <div className="co-root">
         <style>{STYLES}</style>
         <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 20px' }}>
@@ -487,11 +445,7 @@ export default function CheckoutPage() {
 
                 <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                   {/* Stripe - Coming Soon */}
-                  <div
-                    className="method-card method-card-disabled"
-                    onClick={(e) => { e.preventDefault(); }}
-                    title="Coming Soon"
-                  >
+                  <div className="method-card method-card-disabled">
                     <div className="coming-soon-badge">COMING SOON</div>
                     <div className="method-radio">
                       <div className="method-radio-dot" />
@@ -567,10 +521,7 @@ export default function CheckoutPage() {
                   </h2>
                 </div>
 
-                {/* ✅ PayPal Buttons الحقيقية */}
                 <PayPalForm
-                  pendingOrderId={pendingOrderId}
-                  setPendingOrderId={setPendingOrderId}
                   finalTotal={finalTotal}
                   items={items}
                   discountData={discountData}
@@ -602,47 +553,45 @@ export default function CheckoutPage() {
               </h2>
 
               <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
-                {items.map((item, i) => {
-                  return (
-                    <div key={i} style={{ display:'flex', alignItems:'center', gap:12 }}>
-                      <div style={{ position:'relative', flexShrink:0 }}>
-                        <img
-                          src={getImageUrl(item.image) || `https://placehold.co/44x44/161b11/567245?text=${(item.name||'?')[0]}`}
-                          alt={item.name}
-                          style={{ width:44, height:44, borderRadius:10, objectFit:'cover',
-                            border:'1px solid #2a3420' }}
-                          onError={e => { e.target.src=`https://placehold.co/44x44/161b11/567245?text=${(item.name||'?')[0]}`; }}
-                        />
-                        {item.quantity > 1 && (
-                          <span style={{
-                            position:'absolute', top:-6, right:-6,
-                            width:16, height:16, borderRadius:'50%',
-                            background:'#567245', color:'white',
-                            fontSize:9, fontWeight:700,
-                            display:'flex', alignItems:'center', justifyContent:'center',
-                          }}>{item.quantity}</span>
-                        )}
-                      </div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <p style={{ fontSize:12, color:'#e8f0e0', fontWeight:500,
-                          margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                          {item.name}
-                        </p>
-                        <p style={{ fontSize:11, color:'#4a5a3a', margin:'2px 0 0' }}>
-                          × {item.quantity}
-                        </p>
-                      </div>
-                      <span style={{ fontSize:13, fontWeight:600, color:'#c4d6a1', flexShrink:0 }}>
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </span>
+                {items.map((item, i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:12 }}>
+                    <div style={{ position:'relative', flexShrink:0 }}>
+                      <img
+                        src={getImageUrl(item.image) || `https://placehold.co/44x44/161b11/567245?text=${(item.name||'?')[0]}`}
+                        alt={item.name}
+                        style={{ width:44, height:44, borderRadius:10, objectFit:'cover',
+                          border:'1px solid #2a3420' }}
+                        onError={e => { e.target.src=`https://placehold.co/44x44/161b11/567245?text=${(item.name||'?')[0]}`; }}
+                      />
+                      {item.quantity > 1 && (
+                        <span style={{
+                          position:'absolute', top:-6, right:-6,
+                          width:16, height:16, borderRadius:'50%',
+                          background:'#567245', color:'white',
+                          fontSize:9, fontWeight:700,
+                          display:'flex', alignItems:'center', justifyContent:'center',
+                        }}>{item.quantity}</span>
+                      )}
                     </div>
-                  );
-                })}
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <p style={{ fontSize:12, color:'#e8f0e0', fontWeight:500,
+                        margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {item.name}
+                      </p>
+                      <p style={{ fontSize:11, color:'#4a5a3a', margin:'2px 0 0' }}>
+                        × {item.quantity}
+                      </p>
+                    </div>
+                    <span style={{ fontSize:13, fontWeight:600, color:'#c4d6a1', flexShrink:0 }}>
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
               </div>
 
               <div style={{ height:1, background:'#2a3420', margin:'16px 0' }} />
 
-              {/* Discount Code Input */}
+              {/* Discount Code */}
               <div style={{ marginBottom:14 }}>
                 <div style={{ display:'flex', gap:8 }}>
                   <input
@@ -651,7 +600,8 @@ export default function CheckoutPage() {
                     placeholder="Discount code"
                     disabled={!!discountData}
                     style={{
-                      flex:1, background:'#1a1f14', border:`1px solid ${discountData ? 'rgba(34,197,94,0.4)' : '#2a3420'}`,
+                      flex:1, background:'#1a1f14',
+                      border:`1px solid ${discountData ? 'rgba(34,197,94,0.4)' : '#2a3420'}`,
                       borderRadius:10, padding:'10px 12px', color:'#e8f0e0',
                       fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none',
                       fontWeight:600, letterSpacing:'.05em',
