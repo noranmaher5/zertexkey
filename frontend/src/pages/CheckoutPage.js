@@ -461,11 +461,11 @@ export default function CheckoutPage() {
 
   return (
     // ✅ PayPalScriptProvider بيلف الصفحة كلها عشان الـ buttons يشتغلوا
-    <PayPalScriptProvider options={{
-      clientId: process.env.REACT_APP_PAYPAL_CLIENT_ID,
-      currency: 'USD',
-      intent: 'capture',
-    }}>
+  <PayPalScriptProvider options={{
+  clientId: "AfwyY-1izJxJcCu3Uy_g5uagq1b2O1M8OH6ur4rOGdENDBsJSCWysHfNsGO-K5ivK-oD7awDlvt3u3N_",
+  currency: 'USD',
+  intent: 'capture',
+}}>
       <div className="co-root">
         <style>{STYLES}</style>
         <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 20px' }}>
