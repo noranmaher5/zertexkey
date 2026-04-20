@@ -3,7 +3,7 @@ const router  = express.Router();
 const { protect } = require('../middleware/auth');
 const ctrl = require('../controllers/cartController');
 
-router.use(protect); // كل الـ routes محتاجة login
+router.use(protect); 
 
 router.get('/',                    ctrl.getCart);
 router.post('/add',                ctrl.addItem);

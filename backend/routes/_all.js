@@ -2,22 +2,22 @@
 const express = require('express');
 
 const orderRouter = express.Router();
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, checkPermission } = require('../middleware/auth');
 const orderCtrl = require('../controllers/orderController');
 
 orderRouter.get('/my', protect, orderCtrl.getMyOrders);
-orderRouter.get('/', protect, authorize('admin'), orderCtrl.getAllOrders);
+orderRouter.get('/', protect, checkPermission('manage_orders'), orderCtrl.getAllOrders);
 orderRouter.get('/:id', protect, orderCtrl.getOrder);
-orderRouter.put('/:id/status', protect, authorize('admin'), orderCtrl.updateOrderStatus);
+orderRouter.put('/:id/status', protect, checkPermission('manage_orders'), orderCtrl.updateOrderStatus);
 
 // ─── Code Routes ──────────────────────────────────────────────────────────────
 const codeRouter = express.Router();
 const codeCtrl = require('../controllers/codeController');
 
-codeRouter.post('/bulk', protect, authorize('admin'), codeCtrl.addCodesBulk);
-codeRouter.get('/stats', protect, authorize('admin'), codeCtrl.getCodeStats);
-codeRouter.get('/product/:productId', protect, authorize('admin'), codeCtrl.getProductCodes);
-codeRouter.delete('/:id', protect, authorize('admin'), codeCtrl.deleteCode);
+codeRouter.post('/bulk', protect, checkPermission('manage_products'), codeCtrl.addCodesBulk);
+codeRouter.get('/stats', protect, checkPermission('manage_products'), codeCtrl.getCodeStats);
+codeRouter.get('/product/:productId', protect, checkPermission('manage_products'), codeCtrl.getProductCodes);
+codeRouter.delete('/:id', protect, checkPermission('manage_products'), codeCtrl.deleteCode);
 
 // ─── Payment Routes ───────────────────────────────────────────────────────────
 const paymentRouter = express.Router();
@@ -34,9 +34,9 @@ const adminCtrl = require('../controllers/adminController');
 
 adminRouter.use(protect, authorize('admin'));
 adminRouter.get('/dashboard', adminCtrl.getDashboardStats);
-adminRouter.get('/users', adminCtrl.getUsers);
-adminRouter.put('/users/:id/role', authorize('manager'), adminCtrl.updateUserRole);
-adminRouter.put('/users/:id/toggle-status', authorize('manager'), adminCtrl.toggleUserStatus);
+adminRouter.get('/users', checkPermission('manage_users'), adminCtrl.getUsers);
+adminRouter.put('/users/:id/role', checkPermission('manage_users'), adminCtrl.updateUserRole);
+adminRouter.put('/users/:id/toggle-status', checkPermission('manage_users'), adminCtrl.toggleUserStatus);
 
 // ─── User Routes ──────────────────────────────────────────────────────────────
 const userRouter = express.Router();

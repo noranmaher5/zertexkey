@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, checkPermission } = require('../middleware/auth');
 const ctrl = require('../controllers/adminController'); 
 
 // 1. حماية المسارات: الدخول للمشرفين فقط
@@ -10,20 +10,24 @@ router.use(protect, authorize('admin'));
 router.get('/dashboard', ctrl.getDashboardStats);
 
 // 3. إدارة المستخدمين (الروابط المطلوبة)
-router.get('/users', ctrl.getUsers);
-// هذا السطر هو الذي كان ينقصك ويسبب خطأ 404 👇
-router.put('/users/:id/role', ctrl.updateUserRole); 
-router.put('/users/:id/toggle-status', ctrl.toggleUserStatus);
-router.put('/users/:id/password', ctrl.changeUserPassword);
+router.get('/users', checkPermission('manage_users'), ctrl.getUsers);
+//4. تحديث دور المستخدم، تفعيل/تعطيل الحساب، تغيير كلمة المرو
+router.put('/users/:id/role', checkPermission('manage_users'), ctrl.updateUserRole); 
+//5. تفعيل أو تعطيل حساب مستخدم
+router.put('/users/:id/toggle-status', checkPermission('manage_users'), ctrl.toggleUserStatus);
+//6. تغيير كلمة المرورللمستخدم (أدمن فقط)
+router.put('/users/:id/password', checkPermission('manage_users'), ctrl.changeUserPassword);
 
-// 4. إعدادات النظام والتقارير
-router.put('/settings', ctrl.updateSettings);
-// داخل ملف adminRoutes.js
-router.get('/logs', ctrl.getSystemLogs); // تأكدي من إضافة هذا السطر
-router.get('/financials', ctrl.getFinancialReports);
-router.delete('/users/:id', ctrl.deleteUser);
+// 7. إعدادات النظام والتقارير
+router.put('/settings', checkPermission('manage_settings'), ctrl.updateSettings);
+//8. جلب التقارير المالية المفصلة
+router.get('/logs', checkPermission('view_ledger'), ctrl.getSystemLogs); 
+//9. جلب التقارير المالية الشاملة
+router.get('/financials', checkPermission('view_analytics'), ctrl.getFinancialReports);
+//10. حذف مستخدم
+router.delete('/users/:id', checkPermission('manage_users'), ctrl.deleteUser);
 
-// 5.maintenance mode
-router.put('/system/maintenance', ctrl.toggleMaintenanceMode);
+// 11. maintenance mode
+router.put('/system/maintenance', checkPermission('manage_maintenance'), ctrl.toggleMaintenanceMode);
 
 module.exports = router;
