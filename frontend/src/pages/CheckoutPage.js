@@ -404,7 +404,7 @@ export default function CheckoutPage() {
 
   return (
     <PayPalScriptProvider options={{
-      clientId: "AfwyY-1izJxJcCu3Uy_g5uagq1b2O1M8OH6ur4rOGdENDBsJSCWysHfNsGO-K5ivK-oD7awDlvt3u3N_",
+      clientId: process.env.REACT_APP_PAYPAL_CLIENT_ID,
       currency: 'USD',
       intent: 'capture',
     }}>

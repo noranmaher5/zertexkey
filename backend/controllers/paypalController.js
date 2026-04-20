@@ -8,7 +8,7 @@ const emailService = require('../services/emailService');
 const crypto = require('crypto');
 
 const client = () => {
-  const environment = new paypal.core.SandboxEnvironment(
+  const environment = new paypal.core.LiveEnvironment(
     process.env.PAYPAL_CLIENT_ID,
     process.env.PAYPAL_CLIENT_SECRET
   );
