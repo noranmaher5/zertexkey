@@ -98,7 +98,8 @@ const productSchema = new mongoose.Schema({
     average: { type: Number, default: 0, min: 0, max: 5 },
     count: { type: Number, default: 0 }
   },
- // ابحثي عن الجزء الخاص بـ reviews واستبدليه بالآتي:
+  
+ // Reviews
 reviews: [{
     user: { 
       type: mongoose.Schema.Types.ObjectId, 

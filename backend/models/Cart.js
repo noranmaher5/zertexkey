@@ -30,7 +30,7 @@ const cartSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// حساب التوتال
+// Virtual for cart total
 cartSchema.virtual('total').get(function () {
   return this.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
 });

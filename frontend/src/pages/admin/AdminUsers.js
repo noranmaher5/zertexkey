@@ -325,7 +325,7 @@ export default function AdminUsers() {
                 <button 
                   onClick={() => setEditTarget(null)}
                   className="py-4 bg-zinc-900 text-zinc-600 rounded-xl font-semibold text-xs border border-white/5"
-                >Abort</button>
+                >Cancel</button>
               </div>
             </div>
           </div>
@@ -372,7 +372,7 @@ export default function AdminUsers() {
                 onClick={() => setDeleteTarget(null)}
                 className="py-4 bg-zinc-900 text-zinc-400 rounded-xl font-semibold text-xs border border-white/5 hover:border-white/10 transition-all"
               >
-                Abort
+                Cancel
               </button>
             </div>
           </div>
@@ -450,7 +450,7 @@ export default function AdminUsers() {
                 <button
                   onClick={() => setPasswordTarget(null)}
                   className="py-4 bg-zinc-900 text-zinc-600 rounded-xl font-semibold text-xs border border-white/5 hover:border-white/10 transition-all"
-                >Abort</button>
+                >✕</button>
               </div>
             </div>
           </div>

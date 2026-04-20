@@ -25,14 +25,14 @@ const userSchema = new mongoose.Schema({
     minlength: [8, 'Password must be at least 8 characters'],
     select: false
   },
-  // نظام الصلاحيات الجديد
+  // permissions
   permissions: {
     type: [String],
     default: [] 
-    // مثال: ['manage_products', 'manage_orders', 'maintenance_mode', 'edit_roles']
+   
   },
 
-  // للاسم المخفي أو العلامة (مثل النجمة)
+  
   customTitle: {
     type: String,
     default: ''
@@ -96,9 +96,9 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
 };
 
 // Role permission levels
-// داخل models/User.js
+// 
 userSchema.methods.hasPermission = function (requiredRole) {
-  // أضيفي hidden هنا وأعطيها أعلى رقم (مثلاً 6)
+  // Define role hierarchy
   const roleHierarchy = { 
     user: 0, 
     editor: 1, 

@@ -77,7 +77,7 @@ export default function AdminProducts() {
       originalPrice: (p.originalPrice || '').toString(),
       stock: p.stock || 0,
       image: null,
-      reviews: p.reviews || [] // ضمان تحميل التعليقات في الفورم
+      reviews: p.reviews || []
     });
     setEditing(p._id);
     setModal(true);
@@ -115,7 +115,7 @@ export default function AdminProducts() {
         } else if (key === 'image') {
           if (form.image) formData.append('image', form.image);
         } else if (key === 'reviews') {
-          return; // لا نرسل التعليقات في FormData
+          return; 
         } else {
           formData.append(key, form[key]);
         }
@@ -355,7 +355,7 @@ export default function AdminProducts() {
                   </div>
                 </div>
 
-                {/* 🔴 قسم التعليقات - يظهر الآن داخل نفس المودال وبشكل صحيح عند التعديل */}
+                {/* Reviews */}
                 {editing && form.reviews && form.reviews.length > 0 && (
                   <div className="mt-12 pt-8 border-t border-white/5">
                     <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">

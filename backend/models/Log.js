@@ -9,4 +9,4 @@ const logSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Log', logSchema); // استخدام module.exports
+module.exports = mongoose.model('Log', logSchema); 

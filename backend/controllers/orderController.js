@@ -160,7 +160,12 @@ exports.getAllOrders = async (req, res, next) => {
     const { status, page = 1, limit = 20 } = req.query;
 
     const query = {};
-    if (status) query.status = status;
+    if (status) {
+      query.status = status;
+    } else {
+      // By default, only show paid orders (not pending)
+      query.status = { $in: ['paid', 'paid_unconfirmed', 'completed', 'processing'] };
+    }
 
     const total = await Order.countDocuments(query);
 

@@ -11,7 +11,7 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const ref = useRef(null);
 
-  // جلب الإشعارات كل 30 ثانية — فقط إذا كان المستخدم مسجلاً دخوله
+  //notifyications fetching every 30 seconds if authenticated
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchNotifications();
@@ -19,7 +19,7 @@ export default function NotificationBell() {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  // إغلاق القائمة المنسدلة عند الضغط خارجها
+  // close notification bell on click outside
   useEffect(() => {
     const handler = (e) => { 
       if (ref.current && !ref.current.contains(e.target)) setOpen(false); 
@@ -84,7 +84,7 @@ export default function NotificationBell() {
     codes_ready: '🎉',
     order_failed: '❌',
     order_refunded: '💸',
-    NEW_COMMENT: '💬', // إضافة أيقونة للتعليقات الجديدة
+    NEW_COMMENT: '💬', 
     general: '🔔',
   };
 
@@ -138,9 +138,8 @@ export default function NotificationBell() {
             ) : notifications.map(n => (
               <Link
                 key={n._id} 
-                // التوجيه: إذا كان تعليق يذهب لصفحة المنتجات، وإلا للرابط المخزن أو صفحة الطلبات
+                 
                 to={n.type === 'NEW_COMMENT' ? '/admin/products' : (n.actionUrl || '/orders')} 
-                // تمرير المعرف في الـ State ليتم التقاطه في صفحة المنتجات
                 state={n.type === 'NEW_COMMENT' ? { openProduct: n.metadata?.productId } : {}}
                 onClick={() => setOpen(false)}
                 style={{
