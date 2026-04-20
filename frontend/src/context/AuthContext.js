@@ -11,6 +11,9 @@ import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
 
+// ✅ قائمة موحدة لكل الرتب الإدارية
+const ADMIN_ROLES = ['admin', 'owner', 'hidden', 'manager', 'co-owner', 'editor'];
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -71,8 +74,17 @@ export const AuthProvider = ({ children }) => {
             setTimeout(() => reject(new Error('timeout')), 5000)
           )
         ]);
-        setUser(res.data.user);
-        localStorage.setItem('dv_user', JSON.stringify(res.data.user));
+        const fetchedUser = res.data.user;
+        setUser(fetchedUser);
+        localStorage.setItem('dv_user', JSON.stringify(fetchedUser));
+
+        // ✅ redirect للأدمن بس لو هو في صفحة login أو register فقط
+        const isAdmin = ADMIN_ROLES.includes(fetchedUser.role);
+        const currentPath = window.location.pathname;
+        const isAuthPage = ['/login', '/register'].includes(currentPath);
+        if (isAdmin && isAuthPage) {
+          window.location.replace('/admin');
+        }
       } catch (err) {
         if (err.response?.status === 401) {
           localStorage.removeItem('dv_token');
@@ -93,6 +105,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('dv_token', token);
     localStorage.setItem('dv_user', JSON.stringify(user));
     setUser(user);
+
+    // ✅ استخدام ADMIN_ROLES الموحدة
+    if (ADMIN_ROLES.includes(user.role)) {
+      window.location.replace('/admin');
+    }
+
     return user;
   }, []);
 
@@ -102,6 +120,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('dv_token', token);
     localStorage.setItem('dv_user', JSON.stringify(user));
     setUser(user);
+
+    // ✅ لو المسجل عنده رتبة إدارية وديه للداشبورد
+    if (ADMIN_ROLES.includes(user.role)) {
+      window.location.replace('/admin');
+    }
+
     return user;
   }, []);
 
@@ -117,6 +141,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('dv_token', token);
     localStorage.setItem('dv_user', JSON.stringify(user));
     setUser(user);
+
+    // ✅ استخدام ADMIN_ROLES الموحدة
+    if (ADMIN_ROLES.includes(user.role)) {
+      window.location.replace('/admin');
+    }
+
     return user;
   }, []);
 
@@ -124,6 +154,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('dv_token', token);
     localStorage.setItem('dv_user', JSON.stringify(userData));
     setUser(userData);
+
+    // ✅ لو جه من OTP وعنده رتبة إدارية وديه للداشبورد
+    if (ADMIN_ROLES.includes(userData.role)) {
+      window.location.replace('/admin');
+    }
   }, []);
 
   const logout = useCallback(() => {
@@ -147,7 +182,8 @@ export const AuthProvider = ({ children }) => {
     admin: 2,
     manager: 3,
     'co-owner': 4,
-    owner: 5
+    owner: 5,
+    hidden: 6
   };
 
   const hasRole = useCallback(

@@ -18,8 +18,7 @@ import WishlistPage from './pages/WishlistPage';
 import CheckoutPage from './pages/CheckoutPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
+
 import ProfilePage from './pages/ProfilePage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
@@ -145,7 +144,7 @@ const MaintenanceGuard = () => {
   if (checking || authLoading) return null;
 
   // ✅ السماح للأدمن، الأونر، والرتبة المخفية بتخطي شاشة الصيانة
-  const canBypassMaintenance = user && ['admin', 'owner', 'hidden'].includes(user.role);
+  const canBypassMaintenance = user && ['admin', 'owner', 'hidden', 'manager', 'co-owner', 'editor'].includes(user.role);
 
   if (isMaintenance && !canBypassMaintenance) {
     return (
@@ -203,7 +202,7 @@ const AdminRoute = ({ children, permission }) => {
   if (loading) return <div className="loading-screen">LOADING...</div>;
 
   // 1. التحقق من أن المستخدم لديه رتبة إدارية معترف بها
-  const isAuthorizedAdmin = user && ['admin', 'owner', 'hidden'].includes(user.role);
+  const isAuthorizedAdmin = user && ['admin', 'owner', 'hidden', 'manager', 'co-owner', 'editor'].includes(user.role);
 
   if (!isAuthorizedAdmin) {
     return <Navigate to="/login" />;
@@ -223,8 +222,10 @@ const AdminRoute = ({ children, permission }) => {
 };
 
 const GuestRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
-  return !isAuthenticated ? children : <Navigate to="/" replace />;
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) return children;
+  const isAdmin = user && ['admin', 'owner', 'hidden', 'manager', 'co-owner', 'editor'].includes(user.role);
+  return <Navigate to={isAdmin ? '/admin' : '/'} replace />;
 };
 
 function AppRoutes() {
@@ -238,8 +239,7 @@ function AppRoutes() {
           {/* Guest Routes */}
           <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
           <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
-          <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
-          <Route path="/reset-password/:token" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
+         
 
           {/* Maintenance Protected Routes */}
           <Route element={<MaintenanceGuard />}>

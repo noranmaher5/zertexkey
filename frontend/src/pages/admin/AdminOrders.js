@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { orderAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import { getImageUrl } from '../../utils/imageUrl';
@@ -31,13 +31,35 @@ export default function AdminOrders() {
 
     useEffect(() => { loadOrders(); }, [status, page]);
 
-    // ── Auto-refresh كل 15 ثانية لما يجي أوردر جديد ──
+    // ── Smart polling: بيتشيك كل 15 ثانية، بس بيعمل reload لو في أوردر جديد ──
+    const lastTotalRef = useRef(null);
+
     useEffect(() => {
-        const interval = setInterval(() => {
-            loadOrders();
+        const interval = setInterval(async () => {
+            try {
+                const params = { page: 1, limit: 1 };
+                if (status) params.status = status;
+                const res = await orderAPI.getAll(params);
+                const latestTotal = res.data.total;
+
+                // أول مرة نحفظ الـ total بس من غير reload
+                if (lastTotalRef.current === null) {
+                    lastTotalRef.current = latestTotal;
+                    return;
+                }
+
+                // لو جه أوردر جديد → reload
+                if (latestTotal > lastTotalRef.current) {
+                    lastTotalRef.current = latestTotal;
+                    loadOrders();
+                }
+            } catch {
+                // نسيب لو فشل الـ check
+            }
         }, 15000);
+
         return () => clearInterval(interval);
-    }, [status, page]);
+    }, [status]);
 
     const loadOrders = async () => {
         setLoading(true);

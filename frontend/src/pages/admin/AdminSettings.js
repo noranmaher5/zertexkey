@@ -550,15 +550,7 @@ export default function AdminSettings() {
             </div>
           )}
 
-          {/* ── Footer ─────────────────────────────────────────────────── */}
-          <div
-            className="sm mt-16 flex justify-between items-center text-[10px] tracking-[0.3em] uppercase"
-            style={{ color: '#27272a' }}
-          >
-            <span>AES-256 Encrypted</span>
-            <span>DigiVault v4.1</span>
-          </div>
-
+       
         </div>
       </div>
     </>

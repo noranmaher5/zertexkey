@@ -106,16 +106,7 @@ export default function Navbar() {
             )}
           </Link>
 
-          <Link to="/wishlist" className="relative text-[#889679] hover:text-white transition-colors hidden sm:block">
-            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 10-6.364-6.364L12 6.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-            {wishlistCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#567245] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
-                {wishlistCount}
-              </span>
-            )}
-          </Link>
+         
 
           {/* 🔔 NOTIFICATION BELL - يظهر للمستخدمين المسجلين فقط */}
           {isAuthenticated && <NotificationBell />}

@@ -1,5 +1,5 @@
 
-# ⚡ DigiVault — Digital E-Commerce Platform
+# ⚡ ZetrexKeys — Digital E-Commerce Platform
 
 A production-ready full-stack e-commerce platform for selling digital products (game codes, gift cards, eBooks). Built with React, Node.js, MongoDB, and Stripe.
 
@@ -8,7 +8,7 @@ A production-ready full-stack e-commerce platform for selling digital products (
 ## 🗂️ Project Structure :::
 
 ```
-digivault/
+zetrexkeys/
 ├── backend/
 │   ├── config/
 │   ├── controllers/
@@ -16,11 +16,21 @@ digivault/
 │   │   ├── productController.js
 │   │   ├── orderController.js       ← atomic code fulfillment
 │   │   ├── paymentController.js     ← Stripe integration
+│   │   ├── discountController.js       
+│   │   ├── notificationController.js     
 │   │   ├── codeController.js
 │   │   └── adminController.js
+│   │   └── paypalController.js
+
 │   ├── middleware/
 │   │   └── auth.js                  ← JWT + role-based guards
+│   │   └── upload.js                  
 │   ├── models/
+│   │   ├── cart.js
+│   │   ├── discountcode.js
+│   │   ├── log.js
+│   │   ├── notification.js
+│   │   ├── settings.js
 │   │   ├── User.js
 │   │   ├── Product.js
 │   │   ├── Order.js
@@ -28,6 +38,10 @@ digivault/
 │   ├── routes/
 │   │   ├── authRoutes.js
 │   │   ├── productRoutes.js
+│   │   ├── cartRoutes.js
+│   │   ├── userRoutes.js
+│   │   ├── nootificationRoutes.js
+│   │   ├── discountRoutes.js
 │   │   ├── orderRoutes.js
 │   │   ├── paymentRoutes.js
 │   │   ├── codeRoutes.js
@@ -36,6 +50,7 @@ digivault/
 │   │   └── emailService.js          ← Nodemailer templates
 │   ├── utils/
 │   │   └── seeder.js                ← Sample data seeder
+│   │   └── googleverify.js                ←
 │   ├── server.js
 │   ├── package.json
 │   └── .env.example
@@ -46,6 +61,8 @@ digivault/
     ├── src/
     │   ├── components/
     │   │   ├── common/
+    │   │   │   └── ProductCard.js
+    │   │   │   └── notificationBell.js
     │   │   │   └── ProductCard.js
     │   │   └── layout/
     │   │       ├── Navbar.js

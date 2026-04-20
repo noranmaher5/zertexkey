@@ -80,7 +80,7 @@ app.get('/api/health', async (req, res) => {
     res.json({ 
       success: true, 
       maintenanceMode: settings.maintenanceMode, // دي القيمة اللي الجارد بيقرأها
-      message: 'DigiVault API is running' 
+      message: 'ZetrexKeys API is running' 
     });
   } catch (err) {
     res.status(500).json({ success: false, maintenanceMode: false });
