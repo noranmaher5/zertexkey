@@ -307,3 +307,31 @@ exports.getSystemLogs = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+// 10. حذف مستخدم نهائياً
+exports.deleteUser = async (req, res, next) => {
+  try {
+    const userToDelete = await User.findById(req.params.id);
+
+    if (!userToDelete) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // منع حذف الـ owner أو الـ hidden إلا من owner أو hidden
+    const isSuper = req.user.role === 'owner' || req.user.role === 'hidden';
+    if ((userToDelete.role === 'owner' || userToDelete.role === 'hidden') && !isSuper) {
+      return res.status(403).json({ success: false, message: 'Cannot delete this user' });
+    }
+
+    // منع حذف نفسك
+    if (userToDelete._id.toString() === req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Cannot delete your own account' });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    await createLog(req.user, 'DELETE_USER', `${userToDelete.name} (${userToDelete.email})`, 'User permanently deleted');
+
+    res.json({ success: true, message: 'User permanently deleted' });
+  } catch (err) {
+    next(err);
+  }
+};

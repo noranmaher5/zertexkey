@@ -21,14 +21,7 @@ router.put('/settings', ctrl.updateSettings);
 // داخل ملف adminRoutes.js
 router.get('/logs', ctrl.getSystemLogs); // تأكدي من إضافة هذا السطر
 router.get('/financials', ctrl.getFinancialReports);
-router.delete('/users/:id', protect, authorize('admin', 'owner', 'hidden', 'editor', 'manager', 'co-owner'), async (req, res) => {
-  try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: 'User deleted' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to delete user' });
-  }
-});
+router.delete('/users/:id', ctrl.deleteUser);
 
 // 5.maintenance mode
 router.put('/system/maintenance', ctrl.toggleMaintenanceMode);
