@@ -35,7 +35,7 @@ exports.capturePayPalOrder = async (req, res) => {
     if (capture.result.status === 'COMPLETED') {
       const Order = require('../models/Order');
       await Order.findByIdAndUpdate(orderId, { 
-        status: 'paid',
+        status: 'paid_unconfirmed',
         paymentMethod: 'paypal'
       });
       res.json({ success: true });

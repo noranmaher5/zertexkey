@@ -28,9 +28,9 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-3 text-xs uppercase">Explore</h4>
             <ul className="space-y-2 text-[13px]">
-              <li><Link to="/games" className="link">Games</Link></li>
+              <li><Link to="/products" className="link">Games</Link></li>
               <li><Link to="/products" className="link">Store</Link></li>
-              <li><Link to="/community" className="link">Community</Link></li>
+              <li><Link to="/" className="link">Community</Link></li>
             </ul>
           </div>
 
@@ -38,8 +38,8 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-3 text-xs uppercase">Support</h4>
             <ul className="space-y-2 text-[13px]">
-              <li><Link to="/contact" className="link">Contact</Link></li>
-              <li><Link to="/faq" className="link">FAQ</Link></li>
+              <li><Link to="/" className="link">Contact</Link></li>
+              <li><Link to="/" className="link">FAQ</Link></li>
             </ul>
           </div>
 
