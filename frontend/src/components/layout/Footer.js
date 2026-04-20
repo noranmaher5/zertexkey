@@ -39,7 +39,7 @@ export default function Footer() {
             <h4 className="text-white font-semibold mb-3 text-xs uppercase">Support</h4>
             <ul className="space-y-2 text-[13px]">
               <li><Link to="/" className="link">Contact</Link></li>
-              <li><Link to="/" className="link">FAQ</Link></li>
+              <li><Link to="/privacy" className="link">FAQ</Link></li>
             </ul>
           </div>
 

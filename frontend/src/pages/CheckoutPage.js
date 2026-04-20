@@ -394,35 +394,7 @@ export default function CheckoutPage() {
 
   const finalTotal = discountData ? discountData.finalAmount : total;
 
-  // ── ننشئ الأوردر مسبقاً قبل ما اليوزر يضغط PayPal ──
-  const initOrder = async () => {
-    if (isEmpty || orderInitLoading) return;
-    setOrderInitLoading(true);
-    try {
-      const intentRes = await paymentAPI.createPaymentIntent({
-        items: items.map(i => ({
-          productId: i.product?.toString() || i.productId,
-          quantity: i.quantity,
-        })),
-        method: 'paypal',
-        discountCode: discountData ? discountCode : undefined,
-      });
-      setPendingOrderId(intentRes.data.orderId);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to initialize order. Please refresh.');
-    } finally {
-      setOrderInitLoading(false);
-    }
-  };
-
-  // نشغّل initOrder لما الصفحة تتحمل أو لما يتغير الـ discount
-  useEffect(() => {
-    if (!isEmpty) {
-      setPendingOrderId(null); // reset لو الـ discount اتغير
-      initOrder();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discountData]);
+  // ── لا ننشئ الأوردر إلا لما اليوزر يضغط PayPal فعلاً ──
 
   // نتحقق بس إن الكارت مش فاضي
   useEffect(() => {
