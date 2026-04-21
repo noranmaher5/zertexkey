@@ -1,7 +1,7 @@
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 
-// مساعد — جيب الكارت أو ابعت كارت فاضي
+
 const getOrCreateCart = async (userId) => {
   let cart = await Cart.findOne({ user: userId });
   if (!cart) cart = await Cart.create({ user: userId, items: [] });

@@ -178,7 +178,7 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* --- ACTIVITY MODAL: عرض الأوردرات وجواها الأيتيمز --- */}
+      {/* --- ACTIVITY MODAL: --- */}
       {viewingActivity && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl transition-all animate-in fade-in">
           <div className="bg-[#0c0c0c] border border-white/10 w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,1)] flex flex-col max-h-[85vh]">
@@ -198,7 +198,7 @@ export default function AdminUsers() {
               {viewingActivity.orderHistory && viewingActivity.orderHistory.length > 0 ? (
                 viewingActivity.orderHistory.map((order) => (
                   <div key={order._id} className="bg-zinc-900/30 border border-white/5 rounded-[2rem] overflow-hidden group/order">
-                    {/* رأس الأوردر */}
+                    {/* --- ORDER HEADER --- */}
                     <div 
                       onClick={() => setExpandedOrderId(expandedOrderId === order._id ? null : order._id)}
                       className="p-6 flex justify-between items-center cursor-pointer hover:bg-white/[0.02] transition-all"
@@ -226,7 +226,7 @@ export default function AdminUsers() {
                       </div>
                     </div>
 
-                    {/* المنتجات داخل الأوردر (Items Inside Order) */}
+                    {/*  */}
                     {expandedOrderId === order._id && (
                       <div className="px-6 pb-6 pt-2 space-y-3 animate-in slide-in-from-top-2 duration-300">
                         <div className="h-px bg-white/5 mb-4" />
@@ -274,7 +274,7 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {/* --- ACCESS MODAL: التحكم بالرتب والصلاحيات --- */}
+      {/* --- ACCESS MODAL:--- */}
       {editTarget && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl">
           <div className="bg-[#0a0a0a] border border-white/10 w-full max-w-lg rounded-[2.5rem] p-10 shadow-2xl">
@@ -331,7 +331,7 @@ export default function AdminUsers() {
           </div>
         </div>
       )}
-      {/* --- DELETE MODAL: حذف اليوزر نهائياً --- */}
+      {/* --- DELETE MODAL:--- */}
       {deleteTarget && (
         <div className="fixed inset-0 z-[140] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl">
           <div className="bg-[#0a0a0a] border border-red-500/20 w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl">
@@ -379,7 +379,7 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {/* --- PASSWORD MODAL: تغيير باسورد اليوزر --- */}
+      {/* --- PASSWORD MODAL--- */}
       {passwordTarget && (
         <div className="fixed inset-0 z-[130] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl">
           <div className="bg-[#0a0a0a] border border-white/10 w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl">
@@ -410,7 +410,7 @@ export default function AdminUsers() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors text-xs"
                   >
-                    {showPassword ? '🙈' : '👁'}
+                    {showPassword ? '👀' : '👁'}
                   </button>
                 </div>
               </div>

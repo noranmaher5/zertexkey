@@ -512,27 +512,26 @@ export default function ProductsPage() {
   const [searchInput, setSearchInput] = useState(filters.search);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ── debounce ref للسيرش اللايف ──
   const debounceRef = useRef(null);
 
-  // ── handler السيرش اللايف: بيشغل debounce على كل حرف ──
+ 
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchInput(value);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      // بنعمل search بدون ما نغير الـ page عشان الـ setFilter العادي بيعمل page:1
+      
       setFilters(prev => ({ ...prev, search: value, page: 1 }));
     }, 400);
   };
 
-  // cleanup عند unmount
+  
   useEffect(() => {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, []);
 
-  // ── Sync URL → filters لما تجي من HomePage ──
+  
   const prevCategory = useRef(filters.category);
   useEffect(() => {
     const catFromUrl    = searchParams.get('category') || '';
@@ -560,7 +559,7 @@ export default function ProductsPage() {
       setTotal(res.data.total || 0);
       setPages(res.data.pages || 1);
 
-      // sync URL — بنحتفظ بالـ page في الـ URL كمان
+      
       const urlParams = Object.fromEntries(
         Object.entries(filters).filter(([k, v]) => {
           if (v === '' || v === null || v === undefined) return false;
@@ -579,11 +578,11 @@ export default function ProductsPage() {
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
-  // ── setFilter للفلاتر العادية (category, sort, minPrice, maxPrice) — بيعمل page:1 ──
+  
   const setFilter = (key, value) =>
     setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
 
-  // ── setPage — مخصوص للـ pagination بس، ما بيمسش الـ page:1 ──
+  
   const setPage = (newPage) =>
     setFilters(prev => ({ ...prev, page: newPage }));
 
@@ -722,7 +721,7 @@ export default function ProductsPage() {
                 position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
                 pointerEvents: 'none', color: 'var(--text-muted)',
               }}>
-                {/* Spinner لما يكون بيسرش، أيقونة سيرش لما لأ */}
+              
                 {loading && searchInput
                   ? <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round">
                       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">

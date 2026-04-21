@@ -11,11 +11,11 @@ const settingsSchema = new mongoose.Schema({
   },
   // ── إعدادات الإشعارات بالإيميل ────────────────────────────────────────────
   emailNotifications: {
-    orderConfirmation: { type: Boolean, default: true },  // إيميل تأكيد الأوردر للعميل
-    welcomeEmail:      { type: Boolean, default: true },  // إيميل الترحيب بالمستخدم الجديد
-    lowStockAlert:     { type: Boolean, default: true },  // تنبيه الأدمن عند نقص المخزون
-    adminNewOrder:     { type: Boolean, default: false }, // إيميل للأدمن عند كل أوردر جديد
+    orderConfirmation: { type: Boolean, default: true },  
+    welcomeEmail:      { type: Boolean, default: true },  
+    lowStockAlert:     { type: Boolean, default: true },  
+    adminNewOrder:     { type: Boolean, default: false }, 
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Settings', settingsSchema);
+module.exports = mongoose.model('Settings', settingsSchema);

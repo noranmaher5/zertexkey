@@ -292,7 +292,7 @@ function PayPalForm({ finalTotal, items, discountData, discountCode, onSuccess, 
         <PayPalButtons
   style={{ layout: 'vertical', color: 'blue', shape: 'rect', label: 'pay', height: 45 }}
 
-  // بننشئ PayPal order بس — مش بنلمس الداتابيز
+  
   createOrder={async () => {
     const res = await API.post('/payments/paypal/create', {
       amount: finalTotal,
@@ -300,7 +300,7 @@ function PayPalForm({ finalTotal, items, discountData, discountCode, onSuccess, 
     return res.data.paypalOrderId;
   }}
 
-  // بعد الدفع — بنبعت الـ items ونعمل capture وننشئ الأوردر
+ 
   onApprove={async (data) => {
     const res = await API.post('/payments/paypal/capture', {
       paypalOrderId: data.orderID,

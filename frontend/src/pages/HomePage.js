@@ -930,7 +930,7 @@ const isOutOfStock = !product.isUnlimited && (
           style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s', transform: hovered ? 'scale(1.05)' : 'scale(1)' }}
           onError={e => { e.target.src = `https://placehold.co/400x300/0d1f0e/22c55e?text=${encodeURIComponent(product.name?.[0] || '?')}`; }}
         />
-        {/* ⭐ Featured badge */}
+        {/*  Featured badge */}
         <div style={{
           position: 'absolute', top: 10, left: 10,
           background: 'rgba(10,21,11,0.78)', color: '#f59e0b',
@@ -1026,7 +1026,7 @@ export default function HomePage() {
       .finally(() => setFeatLoading(false));
   }, []);
 
-  // ✅ Stable fetch function passed to each CategorySection (no re-creation on re-renders)
+  //  Stable fetch function passed to each CategorySection (no re-creation on re-renders)
   const fetchCategory = useCallback(async (cat) => {
     const res = await productAPI.getAll({ category: cat, limit: 12, isActive: true });
     return res.data.products || [];

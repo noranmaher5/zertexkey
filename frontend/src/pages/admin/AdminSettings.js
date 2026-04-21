@@ -49,7 +49,7 @@ export default function AdminSettings() {
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [toggling, setToggling]               = useState(false);
-  const [togglingEmail, setTogglingEmail]     = useState(null); // which key is saving
+  const [togglingEmail, setTogglingEmail]     = useState(null); 
   const [logs, setLogs]                       = useState([]);
   const [loadingLogs, setLoadingLogs]         = useState(false);
 
@@ -71,7 +71,7 @@ export default function AdminSettings() {
     }
   }, []);
 
-  /* ── Fetch logs (مع spinner — للأول مرة وزر Refresh) ── */
+  
   const fetchLogs = useCallback(async () => {
     setLoadingLogs(true);
     try {
@@ -84,7 +84,7 @@ export default function AdminSettings() {
     }
   }, []);
 
-  /* ── Silent refresh بدون spinner — للـ polling بس ── */
+  
   const silentRefreshLogs = useCallback(async () => {
     try {
       const res = await adminAPI.getLogs();
@@ -92,7 +92,7 @@ export default function AdminSettings() {
         setLogs(prev => {
           const prevIds = prev.map(l => l._id).join(',');
           const nextIds = res.data.logs.map(l => l._id).join(',');
-          // مترندرش لو البيانات نفسها
+          
           if (prevIds === nextIds) return prev;
           return res.data.logs;
         });
@@ -103,7 +103,7 @@ export default function AdminSettings() {
   useEffect(() => { fetchSettings(); }, [fetchSettings]);
   useEffect(() => { if (activeTab === 'logs') fetchLogs(); }, [activeTab, fetchLogs]);
 
-  // ── Auto-refresh كل 20 ثانية بدون إعادة رسم لو مفيش لوجز جديدة ──
+
   useEffect(() => {
     if (activeTab !== 'logs') return;
     const interval = setInterval(silentRefreshLogs, 20000);

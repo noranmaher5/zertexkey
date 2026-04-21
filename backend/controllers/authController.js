@@ -114,7 +114,7 @@ exports.updateProfile = async (req, res, next) => {
     if (name) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
 
-    // بس الرتب الإدارية تقدر تغيّر الصورة
+    // Only admin and higher can update avatar
     const roleLevel = { user:0, editor:1, admin:2, manager:3, 'co-owner':4, owner:5, hidden:6 };
     if (avatar !== undefined && (roleLevel[req.user.role] ?? 0) >= 1) {
       updates.avatar = avatar;

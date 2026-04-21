@@ -134,7 +134,7 @@ exports.createProduct = async (req, res, next) => {
 
     const product = await Product.create(productData);
 
-    // ── تسجيل اللوج ──
+   
     try {
       await Log.create({
         adminId:   req.user.id,
@@ -177,7 +177,7 @@ exports.updateProduct = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    // ── تسجيل اللوج ──
+   
     try {
       await Log.create({
         adminId:   req.user.id,
@@ -207,7 +207,7 @@ exports.deleteProduct = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    // ── تسجيل اللوج ──
+   
     try {
       await Log.create({
         adminId:   req.user.id,
@@ -224,13 +224,13 @@ exports.deleteProduct = async (req, res, next) => {
   }
 };
 
-// ADD REVIEW ✅ (تم التعديل لحل مشكلة الـ name)
+// ADD REVIEW 
 exports.addReview = async (req, res, next) => {
   try {
     const productId = req.params.id;
     const { rating, comment } = req.body;
 
-    // 1. التحقق من أن المستخدم اشترى المنتج فعلاً
+    // 1.check if user has purchased the product before allowing review
     const hasPurchased = await Order.findOne({
       user: req.user.id,
       status: 'completed',
@@ -247,18 +247,18 @@ exports.addReview = async (req, res, next) => {
     const product = await Product.findById(productId);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
     
-    // 2. منع المستخدم من إضافة أكثر من تقييم لنفس المنتج
+    // 2. prevent duplicate review
     if (product.reviews.find(r => r.user.toString() === req.user.id)) {
       return res.status(400).json({ success: false, message: 'You have already reviewed this product.' });
     }
 
-    // 3. حل مشكلة الـ name: نأخذ أي اسم متاح أو نضع "Customer"
-    // جربي req.user.name أو req.user.username حسب الموديل عندك
+ 
+   
     const displayName = req.user.name || req.user.username || 'Customer';
 
     product.reviews.push({
       user: req.user.id,
-      name: displayName, // ✅ لن يكون فارغاً بعد الآن
+      name: displayName, 
       rating: Number(rating),
       comment
     });
@@ -266,7 +266,7 @@ exports.addReview = async (req, res, next) => {
     product.updateRating();
     await product.save();
 
-    // إرسال إشعار (اختياري)
+    
     try {
       await Notification.create({
         user: product.createdBy || req.user.id, 

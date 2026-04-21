@@ -25,16 +25,16 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Category is required'],
     enum: [
-      'roblox',       // 🔴 Roblox Cards
-      'minecraft',    // 🟩 Minecraft
-      'steam',        // 🔵 Steam
-      'discord',      // 💜 Discord
-      'chatgpt',      // 🟢 ChatGPT & AI
-      'movies',       // 🔴 Streaming
-      'gift-cards',   // 🟡 Gift Cards
-      'ebooks',       // 🟠 Digital Books
-      'games',        // 🟣 Games
-      'general'       // ⚪ General
+      'roblox',       
+      'minecraft',    
+      'steam',        
+      'discord',      
+      'chatgpt',      
+      'movies',       
+      'gift-cards', 
+      'ebooks',       
+      'games',        
+      'general'      
     ],
     lowercase: true
   },
@@ -98,7 +98,7 @@ const productSchema = new mongoose.Schema({
     average: { type: Number, default: 0, min: 0, max: 5 },
     count: { type: Number, default: 0 }
   },
-  
+
  // Reviews
 reviews: [{
     user: { 

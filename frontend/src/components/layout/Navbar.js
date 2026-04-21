@@ -108,7 +108,7 @@ export default function Navbar() {
 
          
 
-          {/* 🔔 NOTIFICATION BELL - يظهر للمستخدمين المسجلين فقط */}
+       
           {isAuthenticated && <NotificationBell />}
 
           {/* PROFILE */}

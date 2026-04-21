@@ -65,7 +65,7 @@ const stock = Number(product?.availableStock ?? product?.stock ?? 0);
     }];
   });
 
-  // ← التوست هنا فوراً مع الـ Optimistic Update
+  // Toast
   toast.success(
     `Added ${quantity > 1 ? quantity + 'x ' : ''}${product.name} to cart`,
     {
@@ -121,7 +121,7 @@ const updateQuantity = useCallback(async (productId, quantity) => {
     return match ? { ...i, quantity } : i;
   }));
 
-  // ← توست فوري قبل الـ API
+  // 
   toast.success('Cart updated', {
     id: 'cart-toast',
     duration: 1500,

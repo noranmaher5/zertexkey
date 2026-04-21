@@ -318,7 +318,6 @@ export function OrderDetailPage() {
   const [loading, setLoading]   = useState(true);
   const [showCodes, setShowCodes] = useState({});
   const [copied, setCopied]     = useState({});
-  // ✅ إخفاء/إظهار كل كود بشكل مستقل
   const [revealedCodes, setRevealedCodes] = useState({});
 
   const fetchOrder = () => {
@@ -332,7 +331,7 @@ export function OrderDetailPage() {
     fetchOrder();
   }, [id]);
 
-  // ✅ Auto-refresh كل 10 ثواني لو الأوردر لسه paid_unconfirmed
+  
   useEffect(() => {
     if (!order || order.status !== 'paid_unconfirmed') return;
     const interval = setInterval(fetchOrder, 10000);

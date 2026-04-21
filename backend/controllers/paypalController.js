@@ -15,10 +15,10 @@ const client = () => {
   return new paypal.core.PayPalHttpClient(environment);
 };
 
-// ── 1. ننشئ PayPal Order بس — من غير ما نلمس الداتابيز ──
+
 exports.createPayPalOrder = async (req, res) => {
   try {
-    const { amount } = req.body; // مش محتاجين orderId هنا خالص
+    const { amount } = req.body;
 
     const request = new paypal.orders.OrdersCreateRequest();
     request.requestBody({
@@ -35,12 +35,12 @@ exports.createPayPalOrder = async (req, res) => {
   }
 };
 
-// ── 2. بعد ما اليوزر يدفع — ننشئ الأوردر في الداتابيز ونعمل Capture ──
+
 exports.capturePayPalOrder = async (req, res) => {
   try {
     const { paypalOrderId, items, discountCode } = req.body;
 
-    // أولاً: نعمل Capture على PayPal
+    
     const request = new paypal.orders.OrdersCaptureRequest(paypalOrderId);
     const capture = await client().execute(request);
 
@@ -48,7 +48,7 @@ exports.capturePayPalOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Payment not completed' });
     }
 
-    // ثانياً: بعد تأكيد الدفع — ننشئ الأوردر في الداتابيز
+    
     if (!items || !items.length) {
       return res.status(400).json({ success: false, message: 'No items provided' });
     }
@@ -87,7 +87,7 @@ exports.capturePayPalOrder = async (req, res) => {
     let finalAmount = Math.round(totalAmount * 100) / 100;
     let appliedDiscount = null;
 
-    // تطبيق كود الخصم لو موجود
+    
     if (discountCode) {
       const discount = await DiscountCode.findOne({
         code: discountCode.toUpperCase(),
@@ -114,7 +114,7 @@ exports.capturePayPalOrder = async (req, res) => {
       }
     }
 
-    // Idempotency — نتجنب أوردر مكرر لو في مشكلة
+    
     const signature = orderItems
       .map(i => `${i.product.toString()}:${i.quantity}:${i.price}`)
       .sort()
@@ -136,7 +136,7 @@ exports.capturePayPalOrder = async (req, res) => {
       return res.json({ success: true, orderId: existing._id, reused: true });
     }
 
-    // ننشئ الأوردر — بعد الدفع مباشرة
+   
     const order = await Order.create({
       user: req.user.id,
       items: orderItems,
@@ -144,10 +144,10 @@ exports.capturePayPalOrder = async (req, res) => {
       status: 'paid_unconfirmed',
       paymentMethod: 'paypal',
       checkoutHash,
-      paypalOrderId: paypalOrderId, // نحفظ PayPal ID للمرجعية
+      paypalOrderId: paypalOrderId, 
     });
 
-    // سجّل استخدام كود الخصم
+    
     if (appliedDiscount) {
       await DiscountCode.findByIdAndUpdate(appliedDiscount.id, {
         $inc: { usedCount: 1 },
@@ -162,7 +162,7 @@ exports.capturePayPalOrder = async (req, res) => {
       });
     }
 
-    // إشعار لليوزر
+    
     try {
       await Notification.create({
         user: req.user.id,
@@ -176,7 +176,7 @@ exports.capturePayPalOrder = async (req, res) => {
       console.error('❌ Notification failed:', e);
     }
 
-    // إيميل للأدمن
+   
     emailService.sendAdminNewOrderAlert(order, req.user).catch(() => {});
 
     res.json({ success: true, orderId: order._id });

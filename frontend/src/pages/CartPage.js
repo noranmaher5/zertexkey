@@ -311,7 +311,7 @@ const handleUpdateQty = (item, newQty) => {
     return;
   }
   setQuantities(prev => ({ ...prev, [item._id]: newQty }));
-  updateQuantity(getProductId(item), newQty); // ← getProductId مش item._id
+  updateQuantity(getProductId(item), newQty); 
 };
 
   const handleCheckout = () => {
